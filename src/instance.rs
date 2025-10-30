@@ -1,30 +1,28 @@
-use std::sync::atomic::AtomicBool;
-use std::ffi::CString;
+use crate::ffi;
 use std::error::Error;
+use std::ffi::CString;
 use std::os::raw::c_int;
-use std::sync::atomic::Ordering::Relaxed;
-use ::ffi;
+use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
 
-lazy_static! {
-    static ref IS_INSTANCIATED: AtomicBool = AtomicBool::new(false);
-}
+static IS_INSTANTIATED: AtomicBool = AtomicBool::new(false);
 
-pub struct VipsInstance { }
+pub struct VipsInstance {}
 
 impl VipsInstance {
-    pub fn new(name:&str, leak_test:bool) -> Result<VipsInstance, Box<Error>> {
-        // cas return value: prev value
-        if IS_INSTANCIATED.compare_and_swap(false, true, Relaxed) {
-            Err("You cannot create VipsInstance more than once.".into())
-        } else {
-            let c = CString::new(name)?;
-            unsafe {
-                ffi::vips_init(c.as_ptr());
-                if leak_test {
-                    ffi::vips_leak_set(leak_test as c_int);
+    pub fn new(name: &str, leak_test: bool) -> Result<VipsInstance, Box<dyn Error>> {
+        // Try to set false -> true, allowing only once
+        match IS_INSTANTIATED.compare_exchange(false, true, Relaxed, Relaxed) {
+            Ok(_) => {
+                let c = CString::new(name)?;
+                unsafe {
+                    ffi::vips_init(c.as_ptr());
+                    if leak_test {
+                        ffi::vips_leak_set(leak_test as c_int);
+                    }
                 }
+                Ok(VipsInstance {})
             }
-            Ok(VipsInstance {})
+            Err(_) => Err("You cannot create VipsInstance more than once.".into()),
         }
     }
 }
@@ -34,5 +32,6 @@ impl Drop for VipsInstance {
         unsafe {
             ffi::vips_shutdown();
         }
+        // Note: libvips does not design support init again after shutdown, and does not reset IS_INSTANTIATED here
     }
 }
