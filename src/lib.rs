@@ -55,7 +55,7 @@ mod init;
 mod version;
 
 pub use vips_sys::{
-    VipsAccess, VipsAlign, VipsAngle, VipsAngle45, VipsArgumentFlags, VipsBBits, VipsBandFormat,
+    VipsAccess, VipsAlign, VipsAngle, VipsAngle45, VipsArgumentFlags, VipsBandFormat,
     VipsBlendMode, VipsCoding, VipsCombine, VipsCombineMode, VipsCompassDirection, VipsDemandStyle,
     VipsDirection, VipsExtend, VipsForeignDzContainer, VipsForeignDzDepth, VipsForeignDzLayout,
     VipsForeignFlags, VipsForeignPngFilter, VipsForeignTiffCompression, VipsForeignTiffPredictor,
