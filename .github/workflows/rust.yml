@@ -23,7 +23,7 @@ jobs:
       - name: Set up system dependencies
         run: |
           sudo apt-get update 
-          sudo apt-get install -y pkg-config libvips-dev
+          sudo apt-get install -y pkg-config libvips libvips-dev libvips-tools
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rustc }}
@@ -45,7 +45,7 @@ jobs:
       - name: Set up system dependencies
         run: |
           sudo apt-get update 
-          sudo apt-get install -y pkg-config libvips-dev
+          sudo apt-get install -y pkg-config libvips libvips-dev libvips-tools
       - name: Install rust
         uses: dtolnay/rust-toolchain@master
         with:
@@ -69,7 +69,7 @@ jobs:
       - name: Set up system dependencies
         run: |
           sudo apt-get update 
-          sudo apt-get install -y pkg-config libvips-dev
+          sudo apt-get install -y pkg-config libvips libvips-dev libvips-tools
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
@@ -92,7 +92,7 @@ jobs:
       - name: Set up system dependencies
         run: |
           sudo apt-get update 
-          sudo apt-get install -y pkg-config libvips-dev
+          sudo apt-get install -y pkg-config libvips libvips-dev libvips-tools
       - name: Install rust
         uses: dtolnay/rust-toolchain@master
         with:
