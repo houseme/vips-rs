@@ -1,11 +1,36 @@
-#![allow(non_camel_case_types)]
-#![allow(unused_variables)]
-#![allow(dead_code)]
-extern crate vips_sys as ffi;
-#[macro_use]
-extern crate lazy_static;
+//! vips-rs: Lightweight safety encapsulation of libvips (infrastructure such as initialization, concurrency, caching, versioning, etc.)
+//!
+//! Characteristics:
+//! - Remove 'lazy_static' and complete the global initialization with the standard library 'OnceLock';
+//! - Provide 'init()'/'is_initialized()', concurrency/cache control, version information;
+//! - Unified error handling (grab 'vips_error_buffer()');
+//! - Documentation examples with basic tests.
+//!
+//! Usage examples:
+//! ```no_run
+//! use vips::{init, set_concurrency, cache};
+//!
+//! fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     // initialization (idempotent), recommended to call as early as possible
+//!     init(Some("my-app"))?;
+//!
+//!     // Configure concurrency (default = number of CPU cores)
+//!     vips::set_concurrency(4);
+//!
+//!     // Tuning the cache
+//!     cache::set_max_operations(1000);
+//!     cache::set_max_mem_bytes(256 * 1024 * 1024);
+//!     cache::set_max_files(100);
+//!
+//!     Ok(())
+//! }
+//! ```
 
-// re-exports modules
+pub use crate::cache::*;
+pub use crate::concurrency::{concurrency, set_concurrency};
+pub use crate::error::{Error, Result};
+pub use crate::init::{init, is_initialized};
+pub use crate::version::{version, version_string};
 mod common;
 pub use common::*;
 
@@ -16,69 +41,30 @@ mod image;
 pub use image::VipsImage;
 
 mod interpolate;
-pub use interpolate::VipsInterpolate;
-pub use interpolate::VipsInterpolateMethod;
+pub use interpolate::{VipsInterpolate, VipsInterpolateMethod};
 
 mod region;
 pub use region::VipsRegion;
 
 mod buffer;
 pub use buffer::VipsBuffer;
+pub mod cache;
+mod concurrency;
+mod error;
+mod init;
+mod version;
 
-// re-exports simple structs
-pub use ffi::VipsRect;
+pub use vips_sys::{
+    VipsAccess, VipsAlign, VipsAngle, VipsAngle45, VipsArgumentFlags, VipsBandFormat,
+    VipsBlendMode, VipsCoding, VipsCombine, VipsCombineMode, VipsCompassDirection, VipsDemandStyle,
+    VipsDirection, VipsExtend, VipsForeignDzContainer, VipsForeignDzDepth, VipsForeignDzLayout,
+    VipsForeignFlags, VipsForeignPngFilter, VipsForeignTiffCompression, VipsForeignTiffPredictor,
+    VipsForeignTiffResunit, VipsForeignWebpPreset, VipsFormatFlags, VipsImageType, VipsIntent,
+    VipsInteresting, VipsInterpretation, VipsKernel, VipsOperationBoolean, VipsOperationComplex,
+    VipsOperationComplex2, VipsOperationComplexget, VipsOperationFlags, VipsOperationMath,
+    VipsOperationMath2, VipsOperationMorphology, VipsOperationRelational, VipsOperationRound,
+    VipsPCS, VipsPrecision, VipsRect, VipsSize, VipsToken,
+};
 
-
-// re-exports native enums
-pub use ffi::VipsPrecision;
-pub use ffi::VipsToken;
-pub use ffi::VipsArgumentFlags;
-pub use ffi::VipsDemandStyle;
-pub use ffi::VipsImageType;
-pub use ffi::VipsInterpretation;
-pub use ffi::VipsBandFormat;
-pub use ffi::VipsCoding;
-pub use ffi::VipsAccess;
-pub use ffi::VipsFormatFlags;
-pub use ffi::VipsOperationFlags;
-pub use ffi::VipsForeignFlags;
-pub use ffi::VipsSaveable;
-pub use ffi::VipsForeignWebpPreset;
-pub use ffi::VipsForeignTiffCompression;
-pub use ffi::VipsForeignTiffPredictor;
-pub use ffi::VipsForeignTiffResunit;
-pub use ffi::VipsForeignPngFilter;
-pub use ffi::VipsForeignDzLayout;
-pub use ffi::VipsForeignDzDepth;
-pub use ffi::VipsForeignDzContainer;
-pub use ffi::VipsOperationMath;
-pub use ffi::VipsOperationMath2;
-pub use ffi::VipsOperationRound;
-pub use ffi::VipsOperationRelational;
-pub use ffi::VipsOperationBoolean;
-pub use ffi::VipsOperationComplex;
-pub use ffi::VipsOperationComplex2;
-pub use ffi::VipsOperationComplexget;
-pub use ffi::VipsExtend;
-pub use ffi::VipsCompassDirection;
-pub use ffi::VipsDirection;
-pub use ffi::VipsAlign;
-pub use ffi::VipsAngle;
-pub use ffi::VipsAngle45;
-pub use ffi::VipsInteresting;
-pub use ffi::VipsBlendMode;
-pub use ffi::VipsCombine;
-pub use ffi::VipsOperationMorphology;
-pub use ffi::VipsKernel;
-pub use ffi::VipsSize;
-pub use ffi::VipsIntent;
-pub use ffi::VipsPCS;
-pub use ffi::VipsCombineMode;
-pub use ffi::VipsBBits;
-
-
-pub use ffi::vips_call as call;
-
-extern "C" {
-    pub fn vips_call(operation_name: *const ::std::os::raw::c_char, ...) -> ::std::os::raw::c_int;
-}
+// Simply re-export, no more repeated declaration of extern "C"
+pub use vips_sys::vips_call as call;

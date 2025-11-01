@@ -1,144 +1,109 @@
 # vips-rs
-[![Crates.io](https://img.shields.io/crates/v/vips.svg)](https://crates.io/crates/vips-rs)
-[![Build Status](https://travis-ci.org/elbaro/vips-rs.svg?branch=master)](https://travis-ci.org/elbaro/vips-rs)
 
-This crate provides bindings to libvips.
+[English](README.md) | [Chinese Simplified](README_CN.md)
 
-[Documentation](https://elbaro.github.io/vips-rs/vips/)
+[![Rust](https://github.com/houseme/vips-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/houseme/vips-rs/actions/workflows/rust.yml)
+[![Crates.io](https://img.shields.io/crates/v/vips.svg)](https://crates.io/crates/vips)
+[![Docs](https://img.shields.io/badge/docs-online-blue)](https://houseme.github.io/vips-rs/vips/)
+[![docs.rs](https://docs.rs/vips/badge.svg)](https://docs.rs/vips/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Downloads](https://img.shields.io/crates/d/vips)](https://crates.io/crates/vips)
 
-A binding to `libvips`.
+Rust bindings for libvips: fast, low-memory image processing with a safe, ergonomic API.
 
-## Usage
+- Safe wrappers over common libvips APIs
+- RAII-style initialization/shutdown management
+- Practical helpers for reading, transforming, and writing images
+
+Documentation: https://houseme.github.io/vips-rs/vips/
+
+## Requirements
+
+- Rust >= 1.80.0
+- libvips installed on your system
+    - macOS: `brew install vips`
+    - Linux: `apt-get install -y libvips libvips-dev` (or your distro equivalent)
+
+## Installation
+
+Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
 vips = "*"
 ```
 
-1. Create a `VipsInstance`.
-2. Do your work.
-    ```rs
-    extern crate vips;
-    use vips::*;
-
-    fn main() {
-        let instance = VipsInstance::new("app_test", true);
-        let img = VipsImage::new_from_file("kodim01.png").unwrap();
-        let img = img.thumbnail(123, 234, VipsSize::VIPS_SIZE_FORCE);
-        img.write_to_file("kodim01_123x234.png").unwrap();
-    }
-    ```
-
-## Notes
-- The API is incomplete.
-- After `VipsInstance` is destroyed, you cannot instantiate another. There is a static boolean variable for checking this.
-- If you cannot find an interface you need, you can use `vips-sys` directly, or use `vips::call(op_name, args..)` interface.
-
-## Progress
-
-| Type | Implementation | Test |
-|------|----------------|------|
-| vips |  |  |
-| image |  |  |
-| region |  |  |
-| header |  |  |
-| generate |  |  |
-| op |  |  |
-| err |  |  |
-| memory |  |  |
-| type |  |  |
-| rect |  |  |
-| obj |  |  |
-| thread state |  |  |
-| buf |  |  |
-| basic |  |  |
-
-
-| Image Op | Implementation | Test |
-|----|----------------|------|
-| arithmetic |  |  |
-| colour |  |  |
-| conversion |  |  |
-| convolution |  |  |
-| load/save |  |  |
-| freq filters |  |  |
-| histogram |  |  |
-| draw | ☑️ |  |
-| interpolate | ☑️ |  |
-| morphology |  |  |
-| mosaic | ☑️ |  |
-| create |  |  |
-| resample |  |  |
-
-- warning: draw functions mutate self. you have to invalidate childrends.
-
-
-| Op | Implementation | Test |
-|----|----------------|------|
-| transform |  |  |
-| util |  |  |
-| version |  |  |
-
-
-## How libvips works
-- https://jcupitt.github.io/libvips/API/current/How-it-works.md.html
-
-#### Terms
-- band: channel
-- image: file image / memory (RGB) image / and so on. you cannot directly access a pixel.
-- region: sub-area of image. actually read pixels from a image.
-- partial image: a function to generate pixels for a rectangular region
-
-
-#### init/shutdown lifecycle
-`libvips` requires the user to call `vips_init()` at the beginning and `vips_shutdown()` at the end.
-
-`vips_shutdown` makes sure async operations finish and all resources are released. Optionally it reports any memory leak.
-
-The binding provides `VipsInstance` for RAII. One peculiar behavior of vips is that after calling `vips_shutdown`, you should not call `vips_init` again. To prevent users from doing this, you can create an instance `VipsInstance` only once in your program's lifetime. When you call `VipsInstance::new` second time (even after the first instance is destroyed), you will get `Result::Err`.
-
-#### Memory Management
-`libvips` uses gobject. The memory behind ffi layer is managed by gobject's garbage collection.
-If your `VipsImage` owns a rust memory, it registers the deallocation callback to the event when the gobject is destroyed.
+## Quick start
 
 ```rust
-{
-    let img2 = {
-        // creates new vips::VipsImage that points to the first vips_sys::VipsImage
-        let img1 = VipsImage::from_memory(vec);
-        // creates new vips::VipsImage that points to the second vips_sys::VipsImage
-        img1.some_operation()
-    };
-    // img1 is destroyed. calls g_object_unref(first vips_sys::VipsImage).
-    // the first vips_sys::VipsImage is destroyed
-    // because referenced by the cond vips_sys::VipsImage,
+use vips::*;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize libvips once per process. The boolean usually controls auto-shutdown.
+    let _instance = VipsInstance::new("app_example", true)?;
+
+    // Load an image from file
+    let img = VipsImage::from_file("kodim01.png")?;
+
+    // Create a thumbnail with forced width and height
+    let thumb = img.thumbnail(320, 240, VipsSize::VIPS_SIZE_FORCE)?;
+
+    // Save the result
+    thumb.write_to_file("kodim01_320x240.jpg")?;
+    Ok(())
 }
-// img2 is destroyed.
-// the second vips_sys::VipsImage is destroyed.
-// the first vips_sys::VipsImage is destroyed.
-// gobject callbacks the rust deallocator, and vec is destroyed in rust side.
 ```
 
-#### Owned vs Borrowed
-`VipsImage` owns or borrows its pixel data depending on how it is created.
+## Working with memory
 
-`VipsImage::new_memory`, `VipsImage::from_file` or `VipsImage::from_memory` owns the data.
-`VipsImage::from_memory_reference` borrows the pixel data.
+- Own the pixel buffer (simple and recommended):
 
-If you create a `VipsImage` with a reference to your data, and apply an operation to the image to get another `VipsImage`, your pixel data needs to outlive the second `VipsImage` as well. However, the first `VipsImage` doesn't need to outlive the second one.
+```rust
+let pixels = vec![0u8; 256 * 256 * 3]; // RGB
+let img = VipsImage::from_memory(pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR) ?;
+let thumb = img.thumbnail(200, 200, VipsSize::VIPS_SIZE_FORCE) ?;
+thumb.write_to_file("black_200x200.png") ?;
+```
 
-You can find about what works and what doesn't in `/tests`.
+- Borrow a pixel buffer (make sure the backing data outlives all derived images):
 
+```rust
+let pixels = vec![0u8; 256 * 256 * 3];
+let img = VipsImage::from_memory_reference( & pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR) ?; // The returned image lifetime is tied to `pixels`
+let thumb = img.thumbnail(200, 200, VipsSize::VIPS_SIZE_FORCE) ?;
+thumb.write_to_file("black_ref_200x200.png") ?;
+```
 
+## Lifetimes and common pitfalls
 
-#### No in-place operation
-Vips operations have no side effect on the input image.
-!exception: draw ops mutate self.
+- Prefer owned constructors (`from_file`, `from_memory`) when possible.
+- Borrowing constructors (`from_memory_reference`) tie the image lifetime to the borrowed slice. Do not let the slice
+  drop before all derived images are fully used.
+- Keep the creator image in scope while using results that reference it. Avoid creating images inside a short inner
+  scope and returning derived results from it.
 
-#### Memory vs Buffer
-You can find these words in API names. For example, there are `vips_image_new_from_memory` and `vips_image_new_from_buffer`. They are not the same.
+## API highlights
 
-- memory is a simple (e.g. RGB) array
-- buffer is a formatted (jpeg, png, etc) memory data
+- Image IO: from file, from raw memory, from borrowed memory, save to file
+- Geometry: thumbnail/resize/reduce/shrink
+- Drawing: lines, circles, flood fills (in-place)
+- Stitching: `merge`, `mosaic`, `match_`, `globalbalance`
+- Interpolation: nearest, bilinear, or custom
 
-Some operations directly work on buffer. For example, jpeg buffer can be shrinked during the decoding.
+The API surface is evolving; see the docs for details and more examples.
+
+## Notes
+
+- Initialization: the crate manages `vips_init`/`vips_shutdown` via `VipsInstance` and standard library primitives (
+  `OnceLock`).
+- Side effects: most operations return new images; drawing operations modify `self`.
+- If a higher-level wrapper is missing, you can still access lower-level bindings in `vips-sys` or use `vips::call(...)`
+  to invoke libvips operations directly.
+
+## License
+
+[MIT](LICENSE)
+
+## Changelog
+
+See [`CHANGELOG.md`](CHANGELOG.md).

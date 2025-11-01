@@ -1,0 +1,26 @@
+name: Docs
+on:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v5
+        with:
+          submodules: 'recursive'
+
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y cmake libclang-dev pkg-config libvips-dev
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run cargo doc
+        run: cargo doc --no-deps --all-features

@@ -1,21 +1,22 @@
 [package]
 name = "vips"
-version = "0.1.0-alpha.2"
-authors = ["elbaro <elbaro@github>"]
-description = "A rust binding to libvips."
+version = "0.1.0-alpha.3"
+authors = ["elbaro <elbaro@github>", "houseme <housemecn@gmail.com>"]
+edition = "2021"
+description = "Rust bindings for libvips: fast, low-memory image processing with a safe, ergonomic API."
 keywords = ["vips", "image", "libvips"]
-documentation = "https://elbaro.github.io/vips-rs/vips/"
-repository = "https://github.com/elbaro/vips-rs"
+documentation = "https://houseme.github.io/vips-rs/vips/"
+repository = "https://github.com/houseme/vips-rs"
 readme = "README.md"
 categories = ["multimedia::images"]
 license = "MIT"
+rust-version = "1.80.0"
 
 [dependencies]
-vips-sys = "0.1.2"
-lazy_static = "1.0.0"
+vips-sys = { version = "0.1.3-beta.1" }
 
 [dev-dependencies]
-compiletest_rs = "0.3.11"
+compiletest_rs = "0.11.2"
 
 [package.metadata.docs.rs]
-features = [ "docs" ]
+features = ["docs"]
