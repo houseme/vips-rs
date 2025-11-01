@@ -9,7 +9,6 @@ fn main() {
     // Assert only borrow lifecycle errors
     let _thumbnail: VipsImage = {
         let pixels = vec![0; 256 * 256 * 3];
-        // Do not explicitly mark the type of img
         let img = VipsImage::from_memory_reference(
             &pixels,
             256,
@@ -18,6 +17,6 @@ fn main() {
             VipsBandFormat::VIPS_FORMAT_UCHAR,
         ) //~ ERROR E0597
         .unwrap();
-        img.thumbnail(234, 123, VipsSize::VIPS_SIZE_FORCE).unwrap()
+        img.thumbnail(234, 123, VipsSize::VIPS_SIZE_FORCE).unwrap() //~ ERROR E0597
     };
 }
