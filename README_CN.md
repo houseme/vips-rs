@@ -2,9 +2,12 @@
 
 [English](README.md) | [简体中文](README_CN.md)
 
+[![Rust](https://github.com/houseme/vips-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/houseme/vips-rs/actions/workflows/rust.yml)
 [![Crates.io](https://img.shields.io/crates/v/vips.svg)](https://crates.io/crates/vips)
-[![Docs](https://img.shields.io/badge/docs-online-blue)](https://elbaro.github.io/vips-rs/vips/)
+[![Docs](https://img.shields.io/badge/docs-online-blue)](https://houseme.github.io/vips-rs/vips/)
+[![docs.rs](https://docs.rs/vips/badge.svg)](https://docs.rs/vips/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Downloads](https://img.shields.io/crates/d/vips)](https://crates.io/crates/vips)
 
 `libvips` 的 Rust 绑定，为图片处理提供高性能与低内存占用的能力，并以安全、易用的 API 封装常用功能。
 
@@ -12,7 +15,7 @@
 - 基于 RAII 的初始化/关闭管理
 - 提供读取、变换、写入的常用便捷方法
 
-文档：https://elbaro.github.io/vips-rs/vips/
+文档：https://houseme.github.io/vips-rs/vips/
 
 ## 环境要求
 

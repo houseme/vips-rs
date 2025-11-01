@@ -29,18 +29,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+      - name: Set up system dependencies
+        run: |
+          sudo apt-get update 
+          sudo apt-get install -y pkg-config libvips-dev  
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
+      - uses: taiki-e/install-action@v2
         with:
-          toolchain: stable
-          components: clippy
-
-      - name: Install clippy-sarif
-        uses: taiki-e/install-action@clippy-sarif
-
-      - name: Install sarif-fmt
-        run: taiki-e/install-action@sarif-fmt
+          tool: clippy-sarif,sarif-fmt
 
       - name: Run rust-clippy
         run:
@@ -50,7 +49,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload analysis results to GitHub
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: rust-clippy-results.sarif
           wait-for-processing: true

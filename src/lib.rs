@@ -29,14 +29,13 @@
 #![allow(non_camel_case_types)]
 #![allow(unused_variables)]
 #![allow(dead_code)]
-extern crate vips_sys as ffi;
+use vips_sys as ffi;
 
 pub use crate::cache::*;
 pub use crate::concurrency::{concurrency, set_concurrency};
 pub use crate::error::{Error, Result};
 pub use crate::init::{init, is_initialized};
 pub use crate::version::{version, version_string};
-// re-exports modules
 mod common;
 pub use common::*;
 
@@ -53,17 +52,13 @@ mod region;
 pub use region::VipsRegion;
 
 mod buffer;
+pub use buffer::VipsBuffer;
 mod cache;
 mod concurrency;
 mod error;
 mod init;
 mod version;
 
-pub use buffer::VipsBuffer;
-// re-exports simple structs
-pub use ffi::VipsRect;
-
-// re-exports native enums
 pub use ffi::{
     VipsAccess, VipsAlign, VipsAngle, VipsAngle45, VipsArgumentFlags, VipsBBits, VipsBandFormat,
     VipsBlendMode, VipsCoding, VipsCombine, VipsCombineMode, VipsCompassDirection, VipsDemandStyle,
@@ -73,7 +68,7 @@ pub use ffi::{
     VipsInteresting, VipsInterpretation, VipsKernel, VipsOperationBoolean, VipsOperationComplex,
     VipsOperationComplex2, VipsOperationComplexget, VipsOperationFlags, VipsOperationMath,
     VipsOperationMath2, VipsOperationMorphology, VipsOperationRelational, VipsOperationRound,
-    VipsPCS, VipsPrecision, VipsSaveable, VipsSize, VipsToken,
+    VipsPCS, VipsPrecision, VipsRect, VipsSize, VipsToken,
 };
 
 // Simply re-export, no more repeated declaration of extern "C"

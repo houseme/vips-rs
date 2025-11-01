@@ -2,9 +2,12 @@
 
 [English](README.md) | [Chinese Simplified](README_CN.md)
 
+[![Rust](https://github.com/houseme/vips-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/houseme/vips-rs/actions/workflows/rust.yml)
 [![Crates.io](https://img.shields.io/crates/v/vips.svg)](https://crates.io/crates/vips)
-[![Docs](https://img.shields.io/badge/docs-online-blue)](https://elbaro.github.io/vips-rs/vips/)
+[![Docs](https://img.shields.io/badge/docs-online-blue)](https://houseme.github.io/vips-rs/vips/)
+[![docs.rs](https://docs.rs/vips/badge.svg)](https://docs.rs/vips/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Downloads](https://img.shields.io/crates/d/vips)](https://crates.io/crates/vips)
 
 Rust bindings for libvips: fast, low-memory image processing with a safe, ergonomic API.
 
@@ -12,7 +15,7 @@ Rust bindings for libvips: fast, low-memory image processing with a safe, ergono
 - RAII-style initialization/shutdown management
 - Practical helpers for reading, transforming, and writing images
 
-Documentation: https://elbaro.github.io/vips-rs/vips/
+Documentation: https://houseme.github.io/vips-rs/vips/
 
 ## Requirements
 

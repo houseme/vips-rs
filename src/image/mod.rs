@@ -1,6 +1,5 @@
 use crate::current_error;
 use crate::VipsInterpolate;
-use ffi::{VipsBandFormat, VipsCombineMode, VipsDirection, VipsKernel, VipsSize};
 use std::error::Error;
 use std::ffi::CString;
 use std::marker::PhantomData;
@@ -9,6 +8,8 @@ use std::os::raw::c_int;
 use std::os::raw::c_void;
 use std::ptr::null;
 use std::ptr::null_mut;
+use vips_sys as ffi;
+use vips_sys::{VipsBandFormat, VipsCombineMode, VipsDirection, VipsKernel, VipsSize};
 
 pub struct VipsImage<'a> {
     pub c: *mut ffi::VipsImage,
