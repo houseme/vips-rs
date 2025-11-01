@@ -31,6 +31,6 @@ impl Drop for VipsInstance {
         unsafe {
             vips_sys::vips_shutdown();
         }
-        // Note: libvips does not design support init again after shutdown, and does not reset IS_INSTANTIATED here
+        // Note: libvips does not support re-initialization after shutdown, so IS_INSTANTIATED is not reset here.
     }
 }

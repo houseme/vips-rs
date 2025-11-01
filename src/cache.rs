@@ -4,8 +4,6 @@
 //! - https://www.libvips.org/API/current/libvips-cache.html
 //! - https://www.libvips.org/API/current/libvips-memory.html
 
-// use crate::init;
-
 /// Sets the maximum number of compute nodes that can be retained in the cache
 pub fn set_max_operations(n: i32) {
     unsafe { vips_sys::vips_cache_set_max(n) }
@@ -41,7 +39,7 @@ pub fn max_files() -> i32 {
     unsafe { vips_sys::vips_cache_get_max_files() }
 }
 
-/// Memory Occupation Currently Tracked (bytes)
+/// Currently tracked memory (bytes)
 pub fn tracked_mem_bytes() -> usize {
     unsafe { vips_sys::vips_tracked_get_mem() }
 }

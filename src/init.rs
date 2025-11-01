@@ -1,4 +1,11 @@
 //! Global initialization: Ensures initialization only once with 'OnceLock' and automatically shuts down when the process exits.
+//!
+//! # Safety Note
+//!
+//! **Shutdown Timing:**
+//! The libvips library is automatically shut down when the process exits, during static destructor execution (after `main()` completes).
+//! Any operations referencing libvips after `main()` returns (such as in other static destructors or background threads) may result in undefined behavior.
+//! To avoid this, ensure all libvips operations are completed before `main()` exits.
 
 use crate::error::{take_vips_error, Error, Result};
 use std::ffi::CString;

@@ -1,6 +1,6 @@
-//! vips-rs: Lightweight security encapsulation of libvips (infrastructure such as initialization, concurrency, caching, versioning, etc.)
+//! vips-rs: Lightweight safety encapsulation of libvips (infrastructure such as initialization, concurrency, caching, versioning, etc.)
 //!
-//! Characteristic:
+//! Characteristics:
 //! - Remove 'lazy_static' and complete the global initialization with the standard library 'OnceLock';
 //! - Provide 'init()'/'is_initialized()', concurrency/cache control, version information;
 //! - Unified error handling (grab 'vips_error_buffer()');
@@ -11,7 +11,7 @@
 //! use vips::{init, set_concurrency, cache};
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     // initialization (idempotency), it is recommended to call it as early as possible
+//!     // initialization (idempotent), recommended to call as early as possible
 //!     init(Some("my-app"))?;
 //!
 //!     // Configure concurrency (default = number of CPU cores)
@@ -48,7 +48,7 @@ pub use region::VipsRegion;
 
 mod buffer;
 pub use buffer::VipsBuffer;
-mod cache;
+pub mod cache;
 mod concurrency;
 mod error;
 mod init;
