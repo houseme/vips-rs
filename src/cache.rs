@@ -4,6 +4,8 @@
 //! - https://www.libvips.org/API/current/libvips-cache.html
 //! - https://www.libvips.org/API/current/libvips-memory.html
 
+// use crate::init;
+
 /// Sets the maximum number of compute nodes that can be retained in the cache
 pub fn set_max_operations(n: i32) {
     unsafe { vips_sys::vips_cache_set_max(n) }
@@ -64,7 +66,7 @@ mod tests {
         // Version queries do not require mandatory init
         let v = crate::version::version();
         assert!(v.0 >= 8);
-        assert!(crate::version::version_string().contains("vips-"));
+        assert!(crate::version::version_string().contains("8."));
     }
 
     #[test]

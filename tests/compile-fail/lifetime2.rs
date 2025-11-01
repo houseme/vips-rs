@@ -14,8 +14,7 @@ fn main() {
             3,
             VipsBandFormat::VIPS_FORMAT_UCHAR,
         )
-        .unwrap();
-        //~^ ERROR `pixels` does not live long enough
-        img.thumbnail(234, 123, VipsSize::VIPS_SIZE_FORCE).unwrap()
+        .unwrap(); //~ ERROR E0597
+        img.thumbnail(234, 123, VipsSize::VIPS_SIZE_FORCE).unwrap() //~ ERROR E0597
     };
 }

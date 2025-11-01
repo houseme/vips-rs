@@ -69,9 +69,7 @@ thumb.write_to_file("black_200x200.png") ?;
 
 ```rust
 let pixels = vec![0u8; 256 * 256 * 3];
-let img = VipsImage::from_memory_reference(
-& pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR
-) ?; // The returned image lifetime is tied to `pixels`
+let img = VipsImage::from_memory_reference( & pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR) ?; // The returned image lifetime is tied to `pixels`
 let thumb = img.thumbnail(200, 200, VipsSize::VIPS_SIZE_FORCE) ?;
 thumb.write_to_file("black_ref_200x200.png") ?;
 ```

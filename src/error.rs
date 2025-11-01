@@ -38,6 +38,7 @@ pub(crate) fn take_vips_error() -> Option<String> {
 }
 
 /// Convert the return code (0=OK, non-0=ERR) convention in libvips to Result
+#[allow(dead_code)]
 pub(crate) fn code_to_result(code: i32) -> Result<()> {
     if code == 0 {
         Ok(())

@@ -1,12 +1,11 @@
 use crate::current_error;
-use crate::ffi;
 use crate::VipsRegion;
 use std::error::Error;
 use std::ffi::CString;
 use std::os::raw::c_void;
 
 pub struct VipsInterpolate {
-    pub c: *mut ffi::VipsInterpolate,
+    pub c: *mut vips_sys::VipsInterpolate,
     is_static: bool,
 }
 
@@ -14,7 +13,7 @@ impl Drop for VipsInterpolate {
     fn drop(&mut self) {
         if !self.is_static {
             unsafe {
-                ffi::g_object_unref(self.c as *mut c_void);
+                vips_sys::g_object_unref(self.c as *mut c_void);
             }
         }
     }
@@ -33,7 +32,7 @@ impl VipsInterpolate {
 
     pub fn new(nickname: &str) -> Result<VipsInterpolate, Box<dyn Error>> {
         let nickname = CString::new(nickname)?;
-        let c = unsafe { ffi::vips_interpolate_new(nickname.as_ptr()) };
+        let c = unsafe { vips_sys::vips_interpolate_new(nickname.as_ptr()) };
         if c.is_null() {
             Err(current_error().into())
         } else {
@@ -45,12 +44,12 @@ impl VipsInterpolate {
     }
 
     pub fn nearest_static() -> VipsInterpolate {
-        let c = unsafe { ffi::vips_interpolate_nearest_static() };
+        let c = unsafe { vips_sys::vips_interpolate_nearest_static() };
         VipsInterpolate { c, is_static: true }
     }
 
     pub fn bilinear_static() -> VipsInterpolate {
-        let c = unsafe { ffi::vips_interpolate_bilinear_static() };
+        let c = unsafe { vips_sys::vips_interpolate_bilinear_static() };
         VipsInterpolate { c, is_static: true }
     }
 
@@ -59,21 +58,21 @@ impl VipsInterpolate {
     //
 
     pub fn method(&self) -> VipsInterpolateMethod {
-        let c = unsafe { ffi::vips_interpolate_get_method(self.c) };
+        let c = unsafe { vips_sys::vips_interpolate_get_method(self.c) };
         VipsInterpolateMethod { c }
     }
 
     pub fn window_size(&self) -> i32 {
-        unsafe { ffi::vips_interpolate_get_window_size(self.c) }
+        unsafe { vips_sys::vips_interpolate_get_window_size(self.c) }
     }
 
     pub fn window_offset(&self) -> i32 {
-        unsafe { ffi::vips_interpolate_get_window_offset(self.c) }
+        unsafe { vips_sys::vips_interpolate_get_window_offset(self.c) }
     }
 }
 
 pub struct VipsInterpolateMethod {
-    c: ffi::VipsInterpolateMethod,
+    c: vips_sys::VipsInterpolateMethod,
 }
 
 impl VipsInterpolateMethod {

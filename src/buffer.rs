@@ -1,5 +1,5 @@
+use crate::current_error;
 use crate::VipsImage;
-use crate::{current_error, ffi};
 use std::error::Error;
 use std::os::raw::{c_char, c_int, c_void};
 use std::ptr::null;
@@ -12,7 +12,7 @@ impl VipsBuffer for &[u8] {
     fn thumbnail(&self, width: u32, height: u32) -> Result<VipsImage<'_>, Box<dyn Error>> {
         unsafe {
             let mut out = VipsImage::new_memory()?;
-            let ret: c_int = ffi::vips_thumbnail_buffer(
+            let ret: c_int = vips_sys::vips_thumbnail_buffer(
                 self.as_ptr() as *mut c_void,
                 self.len(),
                 &mut out.c,
@@ -20,7 +20,7 @@ impl VipsBuffer for &[u8] {
                 c"height".as_ptr(),
                 height as c_int,
                 c"size".as_ptr(),
-                ffi::VipsSize::VIPS_SIZE_FORCE,
+                vips_sys::VipsSize::VIPS_SIZE_FORCE,
                 null() as *const c_char,
             );
             if ret == 0 {

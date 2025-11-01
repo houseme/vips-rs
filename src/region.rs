@@ -1,14 +1,13 @@
-use crate::ffi;
 use crate::VipsImage;
 use std::os::raw::c_void;
 
 pub struct VipsRegion {
-    pub c: *mut ffi::VipsRegion,
+    pub c: *mut vips_sys::VipsRegion,
 }
 
 impl VipsRegion {
     pub fn new(image: &VipsImage) -> VipsRegion {
-        let c = unsafe { ffi::vips_region_new(image.c) };
+        let c = unsafe { vips_sys::vips_region_new(image.c) };
         VipsRegion { c }
     }
 }
@@ -16,7 +15,7 @@ impl VipsRegion {
 impl Drop for VipsRegion {
     fn drop(&mut self) {
         unsafe {
-            ffi::g_object_unref(self.c as *mut c_void);
+            vips_sys::g_object_unref(self.c as *mut c_void);
         }
     }
 }

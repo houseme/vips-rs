@@ -1,4 +1,3 @@
-use crate::ffi;
 use std::error::Error;
 use std::ffi::CString;
 use std::os::raw::c_int;
@@ -15,9 +14,9 @@ impl VipsInstance {
             Ok(_) => {
                 let c = CString::new(name)?;
                 unsafe {
-                    ffi::vips_init(c.as_ptr());
+                    vips_sys::vips_init(c.as_ptr());
                     if leak_test {
-                        ffi::vips_leak_set(leak_test as c_int);
+                        vips_sys::vips_leak_set(leak_test as c_int);
                     }
                 }
                 Ok(VipsInstance {})
@@ -30,7 +29,7 @@ impl VipsInstance {
 impl Drop for VipsInstance {
     fn drop(&mut self) {
         unsafe {
-            ffi::vips_shutdown();
+            vips_sys::vips_shutdown();
         }
         // Note: libvips does not design support init again after shutdown, and does not reset IS_INSTANTIATED here
     }

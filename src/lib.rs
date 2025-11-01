@@ -11,7 +11,7 @@
 //! use vips::{init, set_concurrency, cache};
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     initialization (idempotency), it is recommended to call it as early as possible
+//!     // initialization (idempotency), it is recommended to call it as early as possible
 //!     init(Some("my-app"))?;
 //!
 //!     // Configure concurrency (default = number of CPU cores)
@@ -25,11 +25,6 @@
 //!     Ok(())
 //! }
 //! ```
-
-#![allow(non_camel_case_types)]
-#![allow(unused_variables)]
-#![allow(dead_code)]
-use vips_sys as ffi;
 
 pub use crate::cache::*;
 pub use crate::concurrency::{concurrency, set_concurrency};
@@ -59,7 +54,7 @@ mod error;
 mod init;
 mod version;
 
-pub use ffi::{
+pub use vips_sys::{
     VipsAccess, VipsAlign, VipsAngle, VipsAngle45, VipsArgumentFlags, VipsBBits, VipsBandFormat,
     VipsBlendMode, VipsCoding, VipsCombine, VipsCombineMode, VipsCompassDirection, VipsDemandStyle,
     VipsDirection, VipsExtend, VipsForeignDzContainer, VipsForeignDzDepth, VipsForeignDzLayout,
@@ -72,4 +67,4 @@ pub use ffi::{
 };
 
 // Simply re-export, no more repeated declaration of extern "C"
-pub use ffi::vips_call as call;
+pub use vips_sys::vips_call as call;
