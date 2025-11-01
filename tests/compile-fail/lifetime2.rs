@@ -10,12 +10,12 @@ fn main() {
     let _thumbnail: VipsImage = {
         let pixels = vec![0; 256 * 256 * 3];
         let img = VipsImage::from_memory_reference(
-            &pixels,
+            &pixels, //~ ERROR E0597
             256,
             256,
             3,
             VipsBandFormat::VIPS_FORMAT_UCHAR,
-        ) //~ ERROR E0597
+        )
         .unwrap();
         img.thumbnail(234, 123, VipsSize::VIPS_SIZE_FORCE).unwrap() //~ ERROR E0597
     };
