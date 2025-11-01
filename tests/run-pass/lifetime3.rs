@@ -1,7 +1,6 @@
 use vips::VipsBandFormat;
 use vips::VipsImage;
 use vips::VipsInstance;
-use vips::VipsSize;
 
 fn main() {
     let _instance = VipsInstance::new("lifetime_test", true).unwrap();
