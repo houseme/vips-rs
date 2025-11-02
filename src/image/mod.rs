@@ -875,7 +875,6 @@ impl<'a> VipsImage<'a> {
     ///     Ok(())
     /// }
     /// ```
-    #[allow(dead_code)]
     pub fn resize(
         &self,
         scale: f64,
