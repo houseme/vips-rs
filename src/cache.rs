@@ -1,8 +1,8 @@
 //! Cache and memory traces: Encapsulating 'vips_cache_*' and 'vips_tracked_*'
 //!
 //! Reference:
-//! - https://www.libvips.org/API/current/libvips-cache.html
-//! - https://www.libvips.org/API/current/libvips-memory.html
+//! - <https://www.libvips.org/API/current/libvips-cache.html>
+//! - <https://www.libvips.org/API/current/libvips-memory.html>
 
 /// Sets the maximum number of compute nodes that can be retained in the cache
 pub fn set_max_operations(n: i32) {

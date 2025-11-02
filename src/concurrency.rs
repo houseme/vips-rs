@@ -1,6 +1,6 @@
 //! Concurrency control: package 'vips_concurrency_get/set'
 //!
-//! Reference: https://www.libvips.org/API/current/libvips-concurrency.html
+//! Reference: <https://www.libvips.org/API/current/libvips-concurrency.html>
 
 /// Get the current concurrency
 pub fn concurrency() -> i32 {
