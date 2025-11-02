@@ -7,9 +7,9 @@ use std::os::raw::c_void;
 /// ```no_run
 /// use vips::*;
 ///
-/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// fn main() -> Result<()> {
 ///     let _instance = VipsInstance::new("app_test", true)?;
-///     let img = VipsImage::new_from_file("examples/images/kodim01.png")?;
+///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
 ///     let region = VipsRegion::new(&img);
 ///     Ok(())
 /// }
@@ -29,9 +29,9 @@ impl VipsRegion {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let _instance = VipsInstance::new("app_test", true)?;
-    ///     let img = VipsImage::new_from_file("examples/images/kodim01.png")?;
+    ///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
     ///     let region = VipsRegion::new(&img);
     ///     Ok(())
     /// }

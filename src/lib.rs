@@ -28,7 +28,7 @@
 
 pub use crate::cache::*;
 pub use crate::concurrency::{concurrency, set_concurrency};
-pub use crate::error::{current_error, Error, Result};
+pub use crate::error::{code_to_result, take_vips_error, Error, Result};
 pub use crate::init::{init, is_initialized};
 pub use crate::version::{version, version_string};
 

@@ -1,16 +1,17 @@
-use crate::{current_error, VipsImage};
-use std::error::Error;
+use crate::{take_vips_error, Error, Result, VipsImage};
 use std::os::raw::{c_char, c_int, c_void};
 use std::ptr::null;
 
 /// Extension trait for thumbnailing from a byte buffer
+///
 /// # Example
 /// ```no_run
 /// use vips::*;
 ///
-/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// fn main() -> Result<()> {
 ///     let _instance = VipsInstance::new("app_test", true)?;
-///     let img_data: &[u8] = std::fs::read("./examples/images/kodim01.png")?.as_slice();
+///     let binding = std::fs::read("./examples/images/kodim01.png")?;
+///     let img_data: &[u8] = binding.as_slice();
 ///     let thumbnail = img_data.thumbnail(100, 100)?;
 ///     thumbnail.write_to_file("kodim01_thumb.png")?;
 ///     Ok(())
@@ -18,7 +19,7 @@ use std::ptr::null;
 /// ```
 ///
 pub trait VipsBuffer {
-    fn thumbnail(&self, width: u32, height: u32) -> Result<VipsImage<'_>, Box<dyn Error>>;
+    fn thumbnail(&self, width: u32, height: u32) -> Result<VipsImage<'_>>;
 }
 
 impl VipsBuffer for &[u8] {
@@ -35,9 +36,10 @@ impl VipsBuffer for &[u8] {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let _instance = VipsInstance::new("app_test", true)?;
-    ///     let img_data: &[u8] = std::fs::read("./examples/images/kodim01.png")?.as_slice();
+    ///     let binding = std::fs::read("./examples/images/kodim01.png")?;
+    ///     let img_data: &[u8] = binding.as_slice();
     ///     let thumbnail = img_data.thumbnail(100, 100)?;
     ///     thumbnail.write_to_file("kodim01_thumb.png")?;
     ///     Ok(())
@@ -49,7 +51,7 @@ impl VipsBuffer for &[u8] {
     /// Providing invalid or corrupted data may lead to undefined behavior.
     /// Ensure that the data is properly validated before calling this method.
     ///
-    fn thumbnail(&self, width: u32, height: u32) -> Result<VipsImage<'_>, Box<dyn Error>> {
+    fn thumbnail(&self, width: u32, height: u32) -> Result<VipsImage<'_>> {
         unsafe {
             let mut out = VipsImage::new_memory()?;
             let ret: c_int = vips_sys::vips_thumbnail_buffer(
@@ -66,7 +68,9 @@ impl VipsBuffer for &[u8] {
             if ret == 0 {
                 Ok(out)
             } else {
-                Err(current_error().into())
+                Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
+                    "Unknown error from libvips".to_string()
+                })))
             }
         }
     }

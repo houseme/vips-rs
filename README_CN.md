@@ -6,7 +6,7 @@
 [![Crates.io](https://img.shields.io/crates/v/vips.svg)](https://crates.io/crates/vips)
 [![Docs](https://img.shields.io/badge/docs-online-blue)](https://houseme.github.io/vips-rs/vips/)
 [![docs.rs](https://docs.rs/vips/badge.svg)](https://docs.rs/vips/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Downloads](https://img.shields.io/crates/d/vips)](https://crates.io/crates/vips)
 
 `libvips` 的 Rust 绑定，为图片处理提供高性能与低内存占用的能力，并以安全、易用的 API 封装常用功能。
@@ -22,7 +22,7 @@
 - Rust >= 1.80.0
 - 系统已安装 `libvips`
     - macOS：`brew install vips`
-    - Linux：`apt-get install -y libvips libvips-dev`（或使用对应发行版包名）
+    - Linux：`apt-get install -y pkg-config libvips libvips-dev`（或使用对应发行版包名）
 
 ## 安装
 
@@ -38,12 +38,12 @@ vips = "*"
 ```rust
 use vips::*;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<()> {
     // 初始化 libvips（进程内仅需一次，通常布尔值用于控制自动关闭）
     let _instance = VipsInstance::new("app_example", true)?;
 
     // 从文件读取图片
-    let img = VipsImage::from_file("kodim01.png")?;
+    let img = VipsImage::from_file("./examples/images/kodim01.png")?;
 
     // 生成缩略图（强制宽高）
     let thumb = img.thumbnail(320, 240, VipsSize::VIPS_SIZE_FORCE)?;
@@ -69,7 +69,7 @@ thumb.write_to_file("black_200x200.png") ?;
 
 ```rust
 let pixels = vec![0u8; 256 * 256 * 3];
-let img = VipsImage::from_memory_reference( & pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR) ?; // 返回图像与 `pixels` 共享生命周期
+let img = VipsImage::from_memory_reference(&pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR) ?; // 返回图像与 `pixels` 共享生命周期
 let thumb = img.thumbnail(200, 200, VipsSize::VIPS_SIZE_FORCE) ?;
 thumb.write_to_file("black_ref_200x200.png") ?;
 ```

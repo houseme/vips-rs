@@ -1,5 +1,4 @@
-use crate::{current_error, VipsInterpolate};
-use std::error::Error;
+use crate::{take_vips_error, Error, Result, VipsInterpolate};
 use std::ffi::CString;
 use std::marker::PhantomData;
 use std::os::raw::{c_char, c_int, c_void};
@@ -7,6 +6,23 @@ use std::ptr::{null, null_mut};
 use vips_sys::{VipsBandFormat, VipsCombineMode, VipsDirection, VipsKernel, VipsSize};
 
 /// Representation of a libvips image.
+/// This struct wraps a raw pointer to a `VipsImage` from the libvips C library.
+/// It provides methods for creating, manipulating, and destroying images.
+/// # Lifetimes
+/// The `'a` lifetime parameter ensures that the `VipsImage` does not outlive any data it references.
+/// This is particularly important for images created from memory buffers, where the buffer must remain valid
+/// for the lifetime of the `VipsImage`.
+/// # Memory Management
+/// The `VipsImage` struct implements the `Drop` trait to automatically unreference the underlying
+/// libvips image when the `VipsImage` instance goes out of scope. This helps prevent memory leaks
+/// when working with images in Rust.
+///
+/// # Thread Safety
+/// The `VipsImage` struct is not inherently thread-safe. Users must ensure that instances are not
+/// accessed concurrently from multiple threads unless proper synchronization is implemented.
+/// # Error Handling
+/// Many methods on `VipsImage` return a `Result` type to handle errors that may occur during
+/// image operations. Users should handle these errors appropriately in their code.
 ///
 /// # Safety Note
 /// The `VipsImage` struct contains a raw pointer to a libvips image.
@@ -17,7 +33,7 @@ use vips_sys::{VipsBandFormat, VipsCombineMode, VipsDirection, VipsKernel, VipsS
 /// ```no_run
 /// use vips::*;
 ///
-/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// fn main() -> Result<()> {
 ///     let _instance = VipsInstance::new("app_test", true)?;
 ///     let img = VipsImage::from_file("input.jpg")?;
 ///     let thumb = img.thumbnail(100, 100, VipsSize::VIPS_SIZE_BOTH)?;
@@ -25,7 +41,6 @@ use vips_sys::{VipsBandFormat, VipsCombineMode, VipsDirection, VipsKernel, VipsS
 ///     Ok(())
 /// }
 /// ```
-///
 pub struct VipsImage<'a> {
     pub c: *mut vips_sys::VipsImage,
     marker: PhantomData<&'a ()>,
@@ -68,13 +83,13 @@ impl<'a> VipsImage<'a> {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     let img = VipsImage::new()?;
     ///     Ok(())
     /// }
     /// ```
-    pub fn new() -> Result<VipsImage<'a>, Box<dyn Error>> {
+    pub fn new() -> Result<VipsImage<'a>> {
         let c = unsafe { vips_sys::vips_image_new() };
         result(c)
     }
@@ -88,13 +103,13 @@ impl<'a> VipsImage<'a> {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     let img = VipsImage::new_memory()?;
     ///     Ok(())
     /// }
     /// ```
-    pub fn new_memory() -> Result<VipsImage<'a>, Box<dyn Error>> {
+    pub fn new_memory() -> Result<VipsImage<'a>> {
         let c = unsafe { vips_sys::vips_image_new_memory() };
         result(c)
     }
@@ -114,17 +129,22 @@ impl<'a> VipsImage<'a> {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     let img = VipsImage::from_file("input.jpg")?;
     ///     Ok(())
     /// }
     /// ```
-    pub fn from_file<S: Into<Vec<u8>>>(path: S) -> Result<VipsImage<'a>, Box<dyn Error>> {
-        let path = CString::new(path)?;
-        let c =
-            unsafe { vips_sys::vips_image_new_from_file(path.as_ptr(), null() as *const c_char) };
-        result(c)
+    pub fn from_file<S: Into<Vec<u8>>>(path: S) -> Result<VipsImage<'a>> {
+        let path = path.into();
+        let path = std::str::from_utf8(&path)
+            .map_err(|e| Error::InitFailed(format!("invalid path: {}", e)))?;
+        let path =
+            CString::new(path).map_err(|e| Error::InitFailed(format!("invalid path: {}", e)))?;
+        unsafe {
+            let ptr = vips_sys::vips_image_new_from_file(path.as_ptr(), null() as *const c_char);
+            result(ptr)
+        }
     }
 
     /// Create a VipsImage from a memory buffer.
@@ -143,7 +163,7 @@ impl<'a> VipsImage<'a> {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     let img_data: Vec<u8> = vec![/* image data */];
     ///     let img = VipsImage::from_memory(img_data, 800, 600, 3, VipsBandFormat::VIPS_FORMAT_UCHAR)?;
@@ -157,7 +177,7 @@ impl<'a> VipsImage<'a> {
         height: u32,
         bands: u8,
         format: VipsBandFormat,
-    ) -> Result<VipsImage<'a>, Box<dyn Error>> {
+    ) -> Result<VipsImage<'a>> {
         let b: Box<[_]> = buf.into_boxed_slice();
         let c = unsafe {
             vips_sys::vips_image_new_from_memory(
@@ -208,7 +228,7 @@ impl<'a> VipsImage<'a> {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     let img_data: &[u8] = &[/* image data */];
     ///     let img = VipsImage::from_memory_reference(img_data, 800, 600, 3, VipsBandFormat::VIPS_FORMAT_UCHAR)?;
@@ -222,7 +242,7 @@ impl<'a> VipsImage<'a> {
         height: u32,
         bands: u8,
         format: VipsBandFormat,
-    ) -> Result<VipsImage<'a>, Box<dyn Error>> {
+    ) -> Result<VipsImage<'a>> {
         let c = unsafe {
             vips_sys::vips_image_new_from_memory(
                 buf.as_ptr() as *const c_void,
@@ -252,14 +272,14 @@ impl<'a> VipsImage<'a> {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     let img_data: &[u8] = &[/* image data */];
     ///     let img = VipsImage::from_buffer(img_data)?;
     ///     Ok(())
     /// }
     /// ```
-    pub fn from_buffer(buf: &'a [u8]) -> Result<VipsImage<'a>, Box<dyn Error>> {
+    pub fn from_buffer(buf: &'a [u8]) -> Result<VipsImage<'a>> {
         let c = unsafe {
             vips_sys::vips_image_new_from_buffer(
                 buf.as_ptr() as *const c_void,
@@ -295,7 +315,7 @@ impl<'a> VipsImage<'a> {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     let mut img = VipsImage::from_file("input.jpg")?;
     ///     img.draw_rect(&[255.0, 0.0, 0.0], 10, 10, 100, 50)?;
@@ -310,7 +330,7 @@ impl<'a> VipsImage<'a> {
         top: u32,
         width: u32,
         height: u32,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_rect(
                 self.c as *mut vips_sys::VipsImage,
@@ -332,7 +352,7 @@ impl<'a> VipsImage<'a> {
         top: u32,
         width: u32,
         height: u32,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_rect1(
                 self.c as *mut vips_sys::VipsImage,
@@ -346,7 +366,7 @@ impl<'a> VipsImage<'a> {
         };
         result_draw(ret)
     }
-    pub fn draw_point(&mut self, ink: &[f64], x: i32, y: i32) -> Result<(), Box<dyn Error>> {
+    pub fn draw_point(&mut self, ink: &[f64], x: i32, y: i32) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_point(
                 self.c as *mut vips_sys::VipsImage,
@@ -359,7 +379,7 @@ impl<'a> VipsImage<'a> {
         };
         result_draw(ret)
     }
-    pub fn draw_point1(&mut self, ink: f64, x: i32, y: i32) -> Result<(), Box<dyn Error>> {
+    pub fn draw_point1(&mut self, ink: f64, x: i32, y: i32) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_point1(
                 self.c as *mut vips_sys::VipsImage,
@@ -377,7 +397,7 @@ impl<'a> VipsImage<'a> {
         x: i32,
         y: i32,
         mode: VipsCombineMode,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_image(
                 self.c as *mut vips_sys::VipsImage,
@@ -391,13 +411,7 @@ impl<'a> VipsImage<'a> {
         };
         result_draw(ret)
     }
-    pub fn draw_mask(
-        &mut self,
-        ink: &[f64],
-        mask: &VipsImage,
-        x: i32,
-        y: i32,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn draw_mask(&mut self, ink: &[f64], mask: &VipsImage, x: i32, y: i32) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_mask(
                 self.c as *mut vips_sys::VipsImage,
@@ -411,13 +425,7 @@ impl<'a> VipsImage<'a> {
         };
         result_draw(ret)
     }
-    pub fn draw_mask1(
-        &mut self,
-        ink: f64,
-        mask: &VipsImage,
-        x: i32,
-        y: i32,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn draw_mask1(&mut self, ink: f64, mask: &VipsImage, x: i32, y: i32) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_mask1(
                 self.c as *mut vips_sys::VipsImage,
@@ -430,14 +438,7 @@ impl<'a> VipsImage<'a> {
         };
         result_draw(ret)
     }
-    pub fn draw_line(
-        &mut self,
-        ink: &[f64],
-        x1: i32,
-        y1: i32,
-        x2: i32,
-        y2: i32,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn draw_line(&mut self, ink: &[f64], x1: i32, y1: i32, x2: i32, y2: i32) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_line(
                 self.c as *mut vips_sys::VipsImage,
@@ -452,14 +453,7 @@ impl<'a> VipsImage<'a> {
         };
         result_draw(ret)
     }
-    pub fn draw_line1(
-        &mut self,
-        ink: f64,
-        x1: i32,
-        y1: i32,
-        x2: i32,
-        y2: i32,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn draw_line1(&mut self, ink: f64, x1: i32, y1: i32, x2: i32, y2: i32) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_line1(
                 self.c as *mut vips_sys::VipsImage,
@@ -473,14 +467,7 @@ impl<'a> VipsImage<'a> {
         };
         result_draw(ret)
     }
-    pub fn draw_circle(
-        &mut self,
-        ink: &[f64],
-        cx: i32,
-        cy: i32,
-        r: i32,
-        fill: bool,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn draw_circle(&mut self, ink: &[f64], cx: i32, cy: i32, r: i32, fill: bool) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_circle(
                 self.c as *mut vips_sys::VipsImage,
@@ -496,14 +483,7 @@ impl<'a> VipsImage<'a> {
         };
         result_draw(ret)
     }
-    pub fn draw_circle1(
-        &mut self,
-        ink: f64,
-        cx: i32,
-        cy: i32,
-        r: i32,
-        fill: bool,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn draw_circle1(&mut self, ink: f64, cx: i32, cy: i32, r: i32, fill: bool) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_circle1(
                 self.c as *mut vips_sys::VipsImage,
@@ -518,7 +498,7 @@ impl<'a> VipsImage<'a> {
         };
         result_draw(ret)
     }
-    pub fn draw_flood(&mut self, ink: &[f64], x: i32, y: i32) -> Result<(), Box<dyn Error>> {
+    pub fn draw_flood(&mut self, ink: &[f64], x: i32, y: i32) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_flood(
                 self.c as *mut vips_sys::VipsImage,
@@ -531,7 +511,7 @@ impl<'a> VipsImage<'a> {
         };
         result_draw(ret)
     }
-    pub fn draw_flood1(&mut self, ink: f64, x: i32, y: i32) -> Result<(), Box<dyn Error>> {
+    pub fn draw_flood1(&mut self, ink: f64, x: i32, y: i32) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_flood1(
                 self.c as *mut vips_sys::VipsImage,
@@ -543,13 +523,7 @@ impl<'a> VipsImage<'a> {
         };
         result_draw(ret)
     }
-    pub fn draw_smudge(
-        &mut self,
-        left: u32,
-        top: u32,
-        width: u32,
-        height: u32,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn draw_smudge(&mut self, left: u32, top: u32, width: u32, height: u32) -> Result<()> {
         let ret = unsafe {
             vips_sys::vips_draw_smudge(
                 self.c as *mut vips_sys::VipsImage,
@@ -574,7 +548,7 @@ impl<'a> VipsImage<'a> {
         dx: i32,
         dy: i32,
         mblend: Option<i32>,
-    ) -> Result<VipsImage<'a>, Box<dyn Error>> {
+    ) -> Result<VipsImage<'a>> {
         let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
         let ret = unsafe {
             vips_sys::vips_merge(
@@ -605,7 +579,7 @@ impl<'a> VipsImage<'a> {
         hwindow: Option<i32>,
         harea: Option<i32>,
         mblend: Option<i32>,
-    ) -> Result<VipsImage<'_>, Box<dyn Error>> {
+    ) -> Result<VipsImage<'_>> {
         let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
         let ret = unsafe {
             vips_sys::vips_mosaic(
@@ -650,7 +624,7 @@ impl<'a> VipsImage<'a> {
         interpolate: Option<VipsInterpolate>,
         mblend: Option<i32>,
         bandno: Option<i32>,
-    ) -> Result<VipsImage<'_>, Box<dyn Error>> {
+    ) -> Result<VipsImage<'_>> {
         let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
         let ret = unsafe {
             match interpolate {
@@ -727,7 +701,7 @@ impl<'a> VipsImage<'a> {
         hwindow: Option<i32>,
         harea: Option<i32>,
         interpolate: Option<VipsInterpolate>,
-    ) -> Result<VipsImage<'_>, Box<dyn Error>> {
+    ) -> Result<VipsImage<'_>> {
         let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
         let ret = unsafe {
             match interpolate {
@@ -782,7 +756,7 @@ impl<'a> VipsImage<'a> {
         &self,
         gamma: Option<f64>,
         int_output: Option<bool>,
-    ) -> Result<VipsImage<'_>, Box<dyn Error>> {
+    ) -> Result<VipsImage<'_>> {
         let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
         let ret = unsafe {
             vips_sys::vips_globalbalance(
@@ -798,9 +772,11 @@ impl<'a> VipsImage<'a> {
         result_with_ret(out_ptr, ret)
     }
 
-    pub fn remosaic(&self, old_str: &str, new_str: &str) -> Result<VipsImage<'_>, Box<dyn Error>> {
-        let old_str = CString::new(old_str)?;
-        let new_str = CString::new(new_str)?;
+    pub fn remosaic(&self, old_str: &str, new_str: &str) -> Result<VipsImage<'_>> {
+        let old_str = CString::new(old_str)
+            .map_err(|e| Error::InitFailed(format!("invalid old_str: {}", e)))?;
+        let new_str = CString::new(new_str)
+            .map_err(|e| Error::InitFailed(format!("invalid new_str: {}", e)))?;
         let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
         let ret = unsafe {
             vips_sys::vips_remosaic(
@@ -837,7 +813,7 @@ impl<'a> VipsImage<'a> {
     /// # Arguments
     /// * `width` - The desired width of the thumbnail.
     /// * `height` - The desired height of the thumbnail.
-    /// * `size` - The resizing strategy to use (e.g., `Vips
+    /// * `size` - The size mode for the thumbnail (e.g., `VIPS_SIZE_BOTH`, `VIPS_SIZE_UP`, etc.).
     ///
     /// # Returns
     /// A `Result` containing the thumbnail `VipsImage` or an error.
@@ -849,7 +825,7 @@ impl<'a> VipsImage<'a> {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     let img = VipsImage::from_file("input.jpg")?;
     ///     let thumb = img.thumbnail(100, 100, VipsSize::VIPS_SIZE_BOTH)?;
@@ -857,12 +833,7 @@ impl<'a> VipsImage<'a> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn thumbnail(
-        &self,
-        width: u32,
-        height: u32,
-        size: VipsSize,
-    ) -> Result<VipsImage<'_>, Box<dyn Error>> {
+    pub fn thumbnail(&self, width: u32, height: u32, size: VipsSize) -> Result<VipsImage<'_>> {
         let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
         unsafe {
             vips_sys::vips_thumbnail_image(
@@ -883,8 +854,7 @@ impl<'a> VipsImage<'a> {
     ///
     /// # Arguments
     /// * `scale` - The scaling factor for the horizontal dimension.
-    /// * `vscale` - Optional scaling factor for the vertical dimension. If not provided
-    /// , it defaults to the value of `scale`.
+    /// * `vscale` - Optional scaling factor for the vertical dimension. If not provided, it defaults to the value of `scale`.
     /// * `kernel` - Optional kernel to use for resizing. If not provided, it defaults to `VIPS_KERNEL_LANCZOS3`.
     ///
     /// # Returns
@@ -897,7 +867,7 @@ impl<'a> VipsImage<'a> {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     let img = VipsImage::from_file("input.jpg")?;
     ///     let resized_img = img.resize(0.5, None, None)?;
@@ -905,13 +875,12 @@ impl<'a> VipsImage<'a> {
     ///     Ok(())
     /// }
     /// ```
-    #[allow(dead_code)]
-    fn resize(
+    pub fn resize(
         &self,
         scale: f64,
         vscale: Option<f64>,
         kernel: Option<VipsKernel>,
-    ) -> Result<VipsImage<'_>, Box<dyn Error>> {
+    ) -> Result<VipsImage<'_>> {
         let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
         let ret = unsafe {
             vips_sys::vips_resize(
@@ -933,7 +902,7 @@ impl<'a> VipsImage<'a> {
         width: u32,
         height: Option<u32>,
         kernel: Option<VipsKernel>,
-    ) -> Result<VipsImage<'_>, Box<dyn Error>> {
+    ) -> Result<VipsImage<'_>> {
         self.resize(
             width as f64 / self.width() as f64,
             height.map(|h| h as f64 / self.height() as f64),
@@ -972,7 +941,10 @@ impl<'a> VipsImage<'a> {
                 marker: PhantomData,
             }
         } else {
-            panic!("{}", current_error())
+            panic!(
+                "{}",
+                take_vips_error().unwrap_or_else(|| { "Unknown error from libvips".to_string() })
+            )
         }
     }
 
@@ -988,8 +960,12 @@ impl<'a> VipsImage<'a> {
     //
 
     #[allow(dead_code)]
-    fn jpegsave<S: Into<Vec<u8>>>(&mut self, path: S) -> Result<(), Box<dyn Error>> {
-        let path = CString::new(path)?;
+    fn jpegsave<S: Into<Vec<u8>>>(&mut self, path: S) -> Result<()> {
+        let path = path.into();
+        let path = std::str::from_utf8(&path)
+            .map_err(|e| Error::InitFailed(format!("invalid path: {}", e)))?;
+        let path =
+            CString::new(path).map_err(|e| Error::InitFailed(format!("invalid path: {}", e)))?;
         let ret = unsafe {
             vips_sys::vips_jpegsave(
                 self.c as *mut vips_sys::VipsImage,
@@ -997,14 +973,15 @@ impl<'a> VipsImage<'a> {
                 null() as *const c_char,
             )
         };
-        match ret {
-            0 => Ok(()),
-            _ => Err(current_error().into()),
-        }
+        result_draw(ret)
     }
 
-    pub fn write_to_file<S: Into<Vec<u8>>>(&self, path: S) -> Result<(), Box<dyn Error>> {
-        let path = CString::new(path)?;
+    pub fn write_to_file<S: Into<Vec<u8>>>(&self, path: S) -> Result<()> {
+        let path = path.into();
+        let path = std::str::from_utf8(&path)
+            .map_err(|e| Error::InitFailed(format!("invalid path: {}", e)))?;
+        let path =
+            CString::new(path).map_err(|e| Error::InitFailed(format!("invalid path: {}", e)))?;
         let ret = unsafe {
             vips_sys::vips_image_write_to_file(
                 self.c as *mut vips_sys::VipsImage,
@@ -1012,10 +989,7 @@ impl<'a> VipsImage<'a> {
                 null() as *const c_char,
             )
         };
-        match ret {
-            0 => Ok(()),
-            _ => Err(current_error().into()),
-        }
+        result_draw(ret)
     }
 
     //
@@ -1039,9 +1013,11 @@ impl<'a> VipsImage<'a> {
     }
 }
 
-fn result<'a>(ptr: *mut vips_sys::VipsImage) -> Result<VipsImage<'a>, Box<dyn Error>> {
+fn result<'a>(ptr: *mut vips_sys::VipsImage) -> Result<VipsImage<'a>> {
     if ptr.is_null() {
-        Err(current_error().into())
+        Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
+            "Unknown error from libvips".to_string()
+        })))
     } else {
         Ok(VipsImage {
             c: ptr,
@@ -1050,24 +1026,29 @@ fn result<'a>(ptr: *mut vips_sys::VipsImage) -> Result<VipsImage<'a>, Box<dyn Er
     }
 }
 
-fn result_with_ret<'a>(
-    ptr: *mut vips_sys::VipsImage,
-    ret: c_int,
-) -> Result<VipsImage<'a>, Box<dyn Error>> {
-    if ret == 0 {
-        Ok(VipsImage {
+fn result_with_ret<'a>(ptr: *mut vips_sys::VipsImage, ret: c_int) -> Result<VipsImage<'a>> {
+    match ret {
+        0 => Ok(VipsImage {
             c: ptr,
             marker: PhantomData,
-        })
-    } else {
-        Err(current_error().into())
+        }),
+        -1 => {
+            Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
+                "Unknown error from libvips".to_string()
+            })))
+        }
+        _ => Err(Error::Vips("Unknown error from libvips".to_string())),
     }
 }
 
-fn result_draw(ret: c_int) -> Result<(), Box<dyn Error>> {
+fn result_draw(ret: c_int) -> Result<()> {
     match ret {
         0 => Ok(()),
-        -1 => Err(current_error().into()),
-        _ => Err("Unknown error from libvips".into()),
+        -1 => {
+            Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
+                "Unknown error from libvips".to_string()
+            })))
+        }
+        _ => Err(Error::Vips("Unknown error from libvips".to_string())),
     }
 }
