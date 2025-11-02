@@ -6,6 +6,23 @@ use std::ptr::{null, null_mut};
 use vips_sys::{VipsBandFormat, VipsCombineMode, VipsDirection, VipsKernel, VipsSize};
 
 /// Representation of a libvips image.
+/// This struct wraps a raw pointer to a `VipsImage` from the libvips C library.
+/// It provides methods for creating, manipulating, and destroying images.
+/// # Lifetimes
+/// The `'a` lifetime parameter ensures that the `VipsImage` does not outlive any data it references.
+/// This is particularly important for images created from memory buffers, where the buffer must remain valid
+/// for the lifetime of the `VipsImage`.
+/// # Memory Management
+/// The `VipsImage` struct implements the `Drop` trait to automatically unreference the underlying
+/// libvips image when the `VipsImage` instance goes out of scope. This helps prevent memory leaks
+/// when working with images in Rust.
+///
+/// # Thread Safety
+/// The `VipsImage` struct is not inherently thread-safe. Users must ensure that instances are not
+/// accessed concurrently from multiple threads unless proper synchronization is implemented.
+/// # Error Handling
+/// Many methods on `VipsImage` return a `Result` type to handle errors that may occur during
+/// image operations. Users should handle these errors appropriately in their code.
 ///
 /// # Safety Note
 /// The `VipsImage` struct contains a raw pointer to a libvips image.
@@ -24,7 +41,6 @@ use vips_sys::{VipsBandFormat, VipsCombineMode, VipsDirection, VipsKernel, VipsS
 ///     Ok(())
 /// }
 /// ```
-///
 pub struct VipsImage<'a> {
     pub c: *mut vips_sys::VipsImage,
     marker: PhantomData<&'a ()>,

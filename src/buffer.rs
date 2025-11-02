@@ -3,6 +3,7 @@ use std::os::raw::{c_char, c_int, c_void};
 use std::ptr::null;
 
 /// Extension trait for thumbnailing from a byte buffer
+///
 /// # Example
 /// ```no_run
 /// use vips::*;

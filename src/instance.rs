@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
 static IS_INSTANTIATED: AtomicBool = AtomicBool::new(false);
 
 /// A singleton instance to manage libvips initialization and shutdown.
-/// /// # Example
+/// # Example
 /// ```no_run
 /// use vips::*;
 ///

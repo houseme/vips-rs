@@ -7,7 +7,7 @@
 //! ! use vips::error::{Error, Result, take_vips_error, code_to_result};
 //! !
 //! ! fn example() -> Result<()> {
-//! !     let code = unsafe { vips_sys::vips_some_function() }; // hypothetical
+//! !     let code = 0 // hypothetical
 //! !     code_to_result(code)
 //! ! }
 //! ! ```
@@ -91,7 +91,6 @@ pub fn take_vips_error() -> Option<String> {
 ///     code_to_result(code)
 /// }
 /// ```
-#[allow(dead_code)]
 pub fn code_to_result(code: i32) -> Result<()> {
     if code == 0 {
         Ok(())
