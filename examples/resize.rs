@@ -1,8 +1,8 @@
 use vips::*;
 
 fn resize_file() {
-    let img: VipsImage = VipsImage::from_file("kodim01.png").unwrap();
-    let thumbnail = img.thumbnail(123, 234, VipsSize::VIPS_SIZE_FORCE).unwrap();
+    let img: VipsImage = VipsImage::from_file("./examples/images/kodim01.png").unwrap();
+    let thumbnail = img.thumbnail(123, 123, VipsSize::VIPS_SIZE_FORCE).unwrap();
     thumbnail.write_to_file("kodim01_123x234.png").unwrap();
 }
 

@@ -4,6 +4,20 @@ use std::error::Error;
 use std::ffi::CString;
 use std::os::raw::c_void;
 
+/// VipsInterpolate struct wrapping libvips VipsInterpolate
+///
+/// # Example
+/// ```no_run
+/// use vips::*;
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let interpolate = VipsInterpolate::bilinear_static();
+///     let method = interpolate.method();
+///     let region = VipsRegion::new(3, 3, 3)?;
+///     let mut out = vec![0u8; 3]; // assuming 3 channels
+///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
+///     Ok(())
+/// }
+/// ```
 pub struct VipsInterpolate {
     pub c: *mut vips_sys::VipsInterpolate,
     is_static: bool,
@@ -30,6 +44,26 @@ impl VipsInterpolate {
     // ─── CONSTRUCTORS ───────────────────────────────────────────────────────────────
     //
 
+    /// Create a new VipsInterpolate by nickname
+    ///
+    /// # Arguments
+    /// * `nickname` - The nickname of the interpolation method
+    ///
+    /// # Errors
+    /// Returns an error if the nickname is invalid
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let interpolate = VipsInterpolate::new("bilinear")?;
+    ///     let method = interpolate.method();
+    ///     let region = VipsRegion::new(3, 3, 3)?;
+    ///     let mut out = vec![0u8; 3]; // assuming 3 channels
+    ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn new(nickname: &str) -> Result<VipsInterpolate, Box<dyn Error>> {
         let nickname = CString::new(nickname)?;
         let c = unsafe { vips_sys::vips_interpolate_new(nickname.as_ptr()) };
@@ -43,11 +77,47 @@ impl VipsInterpolate {
         }
     }
 
+    /// Create a new nearest static VipsInterpolate
+    ///
+    /// # Returns
+    /// A VipsInterpolate instance for nearest neighbor interpolation
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let interpolate = VipsInterpolate::nearest_static();
+    ///     let method = interpolate.method();
+    ///     let region = VipsRegion::new(3, 3, 3)?;
+    ///     let mut out = vec![0u8; 3]; // assuming 3 channels
+    ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
     pub fn nearest_static() -> VipsInterpolate {
         let c = unsafe { vips_sys::vips_interpolate_nearest_static() };
         VipsInterpolate { c, is_static: true }
     }
 
+    /// Create a new bilinear static VipsInterpolate
+    ///
+    /// # Returns
+    /// A VipsInterpolate instance for bilinear interpolation
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let interpolate = VipsInterpolate::bilinear_static();
+    ///     let method = interpolate.method();
+    ///     let region = VipsRegion::new(3, 3, 3)?;
+    ///     let mut out = vec![0u8; 3]; // assuming 3 channels
+    ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn bilinear_static() -> VipsInterpolate {
         let c = unsafe { vips_sys::vips_interpolate_bilinear_static() };
         VipsInterpolate { c, is_static: true }
@@ -57,25 +127,112 @@ impl VipsInterpolate {
     // ─── PROPERTIES ─────────────────────────────────────────────────────────────────
     //
 
+    /// Get the interpolation method
+    ///
+    /// # Returns
+    /// A VipsInterpolateMethod instance representing the interpolation method
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let interpolate = VipsInterpolate::bilinear_static();
+    ///     let method = interpolate.method();
+    ///     let region = VipsRegion::new(3, 3, 3)?;
+    ///     let mut out = vec![0u8; 3]; // assuming 3 channels
+    ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn method(&self) -> VipsInterpolateMethod {
         let c = unsafe { vips_sys::vips_interpolate_get_method(self.c) };
         VipsInterpolateMethod { c }
     }
 
+    /// Get the window size
+    ///
+    /// # Returns
+    /// The window size used by the interpolation method
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///    let interpolate = VipsInterpolate::bilinear_static();
+    ///    let window_size = interpolate.window_size();
+    ///     println!("Window size: {}", window_size);
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn window_size(&self) -> i32 {
         unsafe { vips_sys::vips_interpolate_get_window_size(self.c) }
     }
 
+    /// Get the window offset
+    ///
+    /// # Returns
+    /// The window offset used by the interpolation method
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let interpolate = VipsInterpolate::bilinear_static();
+    ///     let window_offset = interpolate.window_offset();
+    ///     println!("Window offset: {}", window_offset);
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn window_offset(&self) -> i32 {
         unsafe { vips_sys::vips_interpolate_get_window_offset(self.c) }
     }
 }
 
+/// Function pointer type for VipsInterpolateMethod
+///
+/// # Example
+/// ```no_run
+/// use vips::*;
+///
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let interpolate = VipsInterpolate::bilinear_static();
+///     let method = interpolate.method();
+///     let region = VipsRegion::new(3, 3, 3)?;
+///     let mut out = vec![0u8; 3]; // assuming 3 channels
+///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
+///     Ok(())
+/// }
+/// ```
 pub struct VipsInterpolateMethod {
     c: vips_sys::VipsInterpolateMethod,
 }
 
 impl VipsInterpolateMethod {
+    /// Call the interpolation method
+    ///
+    /// # Arguments
+    /// * `interpolate` - The VipsInterpolate instance
+    /// * `in_` - The input VipsRegion
+    /// * `out` - The output buffer to write the interpolated pixel
+    /// * `x` - The x coordinate to interpolate
+    /// * `y` - The y coordinate to interpolate
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let interpolate = VipsInterpolate::bilinear_static();
+    ///     let method = interpolate.method();
+    ///     let region = VipsRegion::new(3, 3, 3)?;
+    ///     let mut out = vec![0u8; 3]; // assuming 3 channels
+    ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
     pub fn call(
         &self,
         interpolate: &VipsInterpolate,

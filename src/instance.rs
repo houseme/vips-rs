@@ -5,9 +5,49 @@ use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
 
 static IS_INSTANTIATED: AtomicBool = AtomicBool::new(false);
 
+/// A singleton instance to manage libvips initialization and shutdown.
+/// /// # Example
+/// ```no_run
+/// use vips::*;
+///
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let _instance = VipsInstance::new("app_test", true)?;
+///     // Your libvips code here
+///     Ok(())
+/// }
+/// ```
 pub struct VipsInstance {}
 
 impl VipsInstance {
+    /// Create a new VipsInstance, initializing libvips.
+    /// This can only be done once per program execution.
+    /// Subsequent attempts will return an error.
+    /// # Arguments
+    /// * `name` - Application name for libvips initialization.
+    /// * `leak_test` - If true, enables leak testing in libvips.
+    ///
+    /// # Errors
+    /// Returns an error if an instance already exists.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     // Your libvips code here
+    ///     Ok(())
+    /// }
+    /// ```
+    /// # Safety Note
+    ///
+    /// **Shutdown Timing:**
+    /// The libvips library is automatically shut down when the `VipsInstance` is dropped (typically
+    /// at the end of `main()`). Any operations referencing libvips after this point
+    /// (such as in other static destructors or background threads) may result in undefined behavior.
+    /// To avoid this, ensure all libvips operations are completed before the `Vips
+    /// Instance` is dropped.
+    ///
     pub fn new(name: &str, leak_test: bool) -> Result<VipsInstance, Box<dyn Error>> {
         // Try to set false -> true, allowing only once
         match IS_INSTANTIATED.compare_exchange(false, true, Relaxed, Relaxed) {

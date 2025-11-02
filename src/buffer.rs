@@ -1,14 +1,54 @@
-use crate::current_error;
-use crate::VipsImage;
+use crate::{current_error, VipsImage};
 use std::error::Error;
 use std::os::raw::{c_char, c_int, c_void};
 use std::ptr::null;
 
+/// Extension trait for thumbnailing from a byte buffer
+/// # Example
+/// ```no_run
+/// use vips::*;
+///
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let _instance = VipsInstance::new("app_test", true)?;
+///     let img_data: &[u8] = std::fs::read("./examples/images/kodim01.png")?.as_slice();
+///     let thumbnail = img_data.thumbnail(100, 100)?;
+///     thumbnail.write_to_file("kodim01_thumb.png")?;
+///     Ok(())
+/// }
+/// ```
+///
 pub trait VipsBuffer {
     fn thumbnail(&self, width: u32, height: u32) -> Result<VipsImage<'_>, Box<dyn Error>>;
 }
 
 impl VipsBuffer for &[u8] {
+    /// Create a thumbnail VipsImage from the byte buffer
+    ///
+    /// # Arguments
+    /// * `width` - The desired thumbnail width
+    /// * `height` - The desired thumbnail height
+    ///
+    /// # Errors
+    /// Returns an error if the thumbnail creation fails
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     let img_data: &[u8] = std::fs::read("./examples/images/kodim01.png")?.as_slice();
+    ///     let thumbnail = img_data.thumbnail(100, 100)?;
+    ///     thumbnail.write_to_file("kodim01_thumb.png")?;
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Safety Note
+    /// The input byte slice must contain valid image data that libvips can decode.
+    /// Providing invalid or corrupted data may lead to undefined behavior.
+    /// Ensure that the data is properly validated before calling this method.
+    ///
     fn thumbnail(&self, width: u32, height: u32) -> Result<VipsImage<'_>, Box<dyn Error>> {
         unsafe {
             let mut out = VipsImage::new_memory()?;
@@ -30,12 +70,4 @@ impl VipsBuffer for &[u8] {
             }
         }
     }
-
-    // pub fn jpegload(&self) -> Result<VipsImage, Box<Error>> {
-    //     let mut out = VipsImage::new_memory()?;
-    //     unsafe {
-    //         ffi::vips_jpegload_buffer(self.as_mut_ptr() as *mut c_void, buf.len(), &mut out.c);
-    //     }
-    //     Ok(out)
-    // }
 }

@@ -7,6 +7,25 @@ use std::ptr::{null, null_mut};
 use vips_sys::{VipsBandFormat, VipsCombineMode, VipsDirection, VipsKernel, VipsSize};
 
 /// Representation of a libvips image.
+///
+/// # Safety Note
+/// The `VipsImage` struct contains a raw pointer to a libvips image.
+/// The user must ensure that the pointer is valid and that the image is properly managed.
+/// The `Drop` implementation will unreference the image when the `VipsImage` instance is dropped.
+///
+/// # Example
+/// ```no_run
+/// use vips::*;
+///
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let _instance = VipsInstance::new("app_test", true)?;
+///     let img = VipsImage::from_file("input.jpg")?;
+///     let thumb = img.thumbnail(100, 100, VipsSize::VIPS_SIZE_BOTH)?;
+///     thumb.write_to_file("thumb.jpg")?;
+///     Ok(())
+/// }
+/// ```
+///
 pub struct VipsImage<'a> {
     pub c: *mut vips_sys::VipsImage,
     marker: PhantomData<&'a ()>,
@@ -20,7 +39,16 @@ impl<'a> Drop for VipsImage<'a> {
     }
 }
 
-// callback used by gobjects
+/// Callback function to free memory after a VipsImage created from memory is closed.
+///
+/// # Safety
+/// This function is called by libvips when the image is closed.
+/// The `user_data` pointer must be a valid pointer to a `Box<Box<[u8]>>`.
+///
+/// # Arguments
+/// * `_ptr` - Pointer to the VipsImage (unused)
+/// * `user_data` - Pointer to the user data (Boxed buffer)
+///
 pub unsafe extern "C" fn image_postclose(_ptr: *mut vips_sys::VipsImage, user_data: *mut c_void) {
     let b: Box<Box<[u8]>> = Box::from_raw(user_data as *mut Box<[u8]>);
     drop(b);
@@ -31,16 +59,67 @@ impl<'a> VipsImage<'a> {
     // ─── CONSTRUCTORS ───────────────────────────────────────────────────────────────
     //
 
+    /// Create a new empty VipsImage.
+    ///
+    /// # Errors
+    /// Returns an error if the image creation fails.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     let img = VipsImage::new()?;
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn new() -> Result<VipsImage<'a>, Box<dyn Error>> {
         let c = unsafe { vips_sys::vips_image_new() };
         result(c)
     }
 
+    /// Create a new empty VipsImage in memory.
+    ///
+    /// # Errors
+    /// Returns an error if the image creation fails.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     let img = VipsImage::new_memory()?;
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn new_memory() -> Result<VipsImage<'a>, Box<dyn Error>> {
         let c = unsafe { vips_sys::vips_image_new_memory() };
         result(c)
     }
 
+    /// Create a VipsImage from a file.
+    ///
+    /// # Arguments
+    /// * `path` - The file path to load the image from.
+    ///
+    /// # Errors
+    /// Returns an error if the image loading fails.
+    ///
+    /// # Returns
+    /// A `Result` containing the loaded `VipsImage` or an error.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     let img = VipsImage::from_file("input.jpg")?;
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn from_file<S: Into<Vec<u8>>>(path: S) -> Result<VipsImage<'a>, Box<dyn Error>> {
         let path = CString::new(path)?;
         let c =
@@ -48,6 +127,30 @@ impl<'a> VipsImage<'a> {
         result(c)
     }
 
+    /// Create a VipsImage from a memory buffer.
+    ///
+    /// # Arguments
+    /// * `buf` - The buffer containing the image data.
+    /// * `width` - The width of the image.
+    /// * `height` - The height of the image.
+    /// * `bands` - The number of bands (channels) in the image.
+    /// * `format` - The band format of the image.
+    ///
+    /// # Errors
+    /// Returns an error if the image creation fails.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     let img_data: Vec<u8> = vec![/* image data */];
+    ///     let img = VipsImage::from_memory(img_data, 800, 600, 3, VipsBandFormat::VIPS_FORMAT_UCHAR)?;
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
     pub fn from_memory(
         buf: Vec<u8>,
         width: u32,
@@ -86,6 +189,33 @@ impl<'a> VipsImage<'a> {
         result(c)
     }
 
+    /// Create a VipsImage from a memory buffer reference.
+    ///
+    /// # Arguments
+    /// * `buf` - The buffer slice containing the image data.
+    /// * `width` - The width of the image.
+    /// * `height` - The height of the image.
+    /// * `bands` - The number of bands (channels) in the image.
+    /// * `format` - The band format of the image.
+    ///
+    /// # Returns
+    /// A `Result` containing the created `VipsImage` or an error.
+    ///
+    /// # Errors
+    /// Returns an error if the image creation fails.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     let img_data: &[u8] = &[/* image data */];
+    ///     let img = VipsImage::from_memory_reference(img_data, 800, 600, 3, VipsBandFormat::VIPS_FORMAT_UCHAR)?;
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
     pub fn from_memory_reference(
         buf: &'a [u8],
         width: u32,
@@ -107,7 +237,28 @@ impl<'a> VipsImage<'a> {
         result(c)
     }
 
-    // formatted
+    /// Create a VipsImage from a byte buffer.
+    ///
+    /// # Arguments
+    /// * `buf` - The buffer slice containing the image data.
+    ///
+    /// # Returns
+    /// A `Result` containing the created `VipsImage` or an error.
+    ///
+    /// # Errors
+    /// Returns an error if the image creation fails.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     let img_data: &[u8] = &[/* image data */];
+    ///     let img = VipsImage::from_buffer(img_data)?;
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn from_buffer(buf: &'a [u8]) -> Result<VipsImage<'a>, Box<dyn Error>> {
         let c = unsafe {
             vips_sys::vips_image_new_from_buffer(
@@ -125,6 +276,33 @@ impl<'a> VipsImage<'a> {
     // ─── DRAW ───────────────────────────────────────────────────────────────────────
     //
 
+    /// Draw a rectangle on the image.
+    ///
+    /// # Arguments
+    /// * `ink` - The color to use for drawing, as a slice of f64 values.
+    /// * `left` - The left coordinate of the rectangle.
+    /// * `top` - The top coordinate of the rectangle.
+    /// * `width` - The width of the rectangle.
+    /// * `height` - The height of the rectangle.
+    ///
+    /// # Returns
+    /// A `Result` indicating success or failure.
+    ///
+    /// # Errors
+    /// Returns an error if the drawing operation fails.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     let mut img = VipsImage::from_file("input.jpg")?;
+    ///     img.draw_rect(&[255.0, 0.0, 0.0], 10, 10, 100, 50)?;
+    ///     img.write_to_file("output.jpg")?;
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn draw_rect(
         &mut self,
         ink: &[f64],
@@ -654,6 +832,31 @@ impl<'a> VipsImage<'a> {
     // ─── RESIZE ─────────────────────────────────────────────────────────────────────
     //
 
+    /// Create a thumbnail of the image.
+    ///
+    /// # Arguments
+    /// * `width` - The desired width of the thumbnail.
+    /// * `height` - The desired height of the thumbnail.
+    /// * `size` - The resizing strategy to use (e.g., `Vips
+    ///
+    /// # Returns
+    /// A `Result` containing the thumbnail `VipsImage` or an error.
+    ///
+    /// # Errors
+    /// Returns an error if the thumbnail creation fails.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     let img = VipsImage::from_file("input.jpg")?;
+    ///     let thumb = img.thumbnail(100, 100, VipsSize::VIPS_SIZE_BOTH)?;
+    ///     thumb.write_to_file("thumb.jpg")?;
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn thumbnail(
         &self,
         width: u32,
@@ -676,7 +879,32 @@ impl<'a> VipsImage<'a> {
         result(out_ptr)
     }
 
-    // default: block shrink + lanczos3
+    /// Resize the image.
+    ///
+    /// # Arguments
+    /// * `scale` - The scaling factor for the horizontal dimension.
+    /// * `vscale` - Optional scaling factor for the vertical dimension. If not provided
+    /// , it defaults to the value of `scale`.
+    /// * `kernel` - Optional kernel to use for resizing. If not provided, it defaults to `VIPS_KERNEL_LANCZOS3`.
+    ///
+    /// # Returns
+    /// A `Result` containing the resized `VipsImage` or an error.
+    ///
+    /// # Errors
+    /// Returns an error if the resizing operation fails.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     let img = VipsImage::from_file("input.jpg")?;
+    ///     let resized_img = img.resize(0.5, None, None)?;
+    ///     resized_img.write_to_file("resized.jpg")?;
+    ///     Ok(())
+    /// }
+    /// ```
     #[allow(dead_code)]
     fn resize(
         &self,

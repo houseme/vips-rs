@@ -8,7 +8,7 @@
 //!
 //! Usage examples:
 //! ```no_run
-//! use vips::{init, set_concurrency, cache};
+//! use vips::{init, set_concurrency};
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     // initialization (idempotent), recommended to call as early as possible
@@ -18,9 +18,9 @@
 //!     vips::set_concurrency(4);
 //!
 //!     // Tuning the cache
-//!     cache::set_max_operations(1000);
-//!     cache::set_max_mem_bytes(256 * 1024 * 1024);
-//!     cache::set_max_files(100);
+//!     vips::set_max_operations(1000);
+//!     vips::set_max_mem_bytes(256 * 1024 * 1024);
+//!     vips::set_max_files(100);
 //!
 //!     Ok(())
 //! }
@@ -28,11 +28,9 @@
 
 pub use crate::cache::*;
 pub use crate::concurrency::{concurrency, set_concurrency};
-pub use crate::error::{Error, Result};
+pub use crate::error::{current_error, Error, Result};
 pub use crate::init::{init, is_initialized};
 pub use crate::version::{version, version_string};
-mod common;
-pub use common::*;
 
 mod instance;
 pub use instance::VipsInstance;
@@ -48,7 +46,7 @@ pub use region::VipsRegion;
 
 mod buffer;
 pub use buffer::VipsBuffer;
-pub mod cache;
+mod cache;
 mod concurrency;
 mod error;
 mod init;

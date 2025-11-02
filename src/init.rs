@@ -25,6 +25,20 @@ impl Drop for InitGuard {
 }
 
 /// Initialize libvips (idempotent). `app_name` can be used for logging and diagnostic display.
+/// If `app_name` is `None`, a default name "vips-rs" will be used.
+///
+/// # Errors
+/// Returns `Error::InitFailed` if initialization fails.
+///
+/// # Example
+/// ```no_run
+/// use vips::init;
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     init("my_app")?;
+///     // Your libvips code here
+///     Ok(())
+/// }
+/// ```
 pub fn init(app_name: Option<&str>) -> Result<()> {
     // If initialized, return directly.
     if VIPS.get().is_some() {
@@ -46,6 +60,25 @@ pub fn init(app_name: Option<&str>) -> Result<()> {
 }
 
 /// Is it currently initialized?
+///
+/// # Safety
+/// This function is safe to call from multiple threads.
+///
+/// # Returns
+/// `true` if libvips has been initialized, `false` otherwise.
+///
+/// /// # Example
+/// ```no_run
+/// use vips::is_initialized;
+///
+/// fn main() {
+///     if is_initialized() {
+///         println!("libvips is initialized");
+///     } else {
+///         println!("libvips is not initialized");
+///     }
+/// }
+/// ```
 pub fn is_initialized() -> bool {
     VIPS.get().is_some()
 }
