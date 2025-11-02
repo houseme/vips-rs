@@ -1,4 +1,4 @@
-use std::error::Error;
+use crate::{Error, Result};
 use std::ffi::CString;
 use std::os::raw::c_int;
 use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
@@ -10,7 +10,7 @@ static IS_INSTANTIATED: AtomicBool = AtomicBool::new(false);
 /// ```no_run
 /// use vips::*;
 ///
-/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// fn main() -> Result<()> {
 ///     let _instance = VipsInstance::new("app_test", true)?;
 ///     // Your libvips code here
 ///     Ok(())
@@ -33,7 +33,7 @@ impl VipsInstance {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     // Your libvips code here
     ///     Ok(())
@@ -48,11 +48,12 @@ impl VipsInstance {
     /// To avoid this, ensure all libvips operations are completed before the `Vips
     /// Instance` is dropped.
     ///
-    pub fn new(name: &str, leak_test: bool) -> Result<VipsInstance, Box<dyn Error>> {
+    pub fn new(name: &str, leak_test: bool) -> Result<VipsInstance> {
         // Try to set false -> true, allowing only once
         match IS_INSTANTIATED.compare_exchange(false, true, Relaxed, Relaxed) {
             Ok(_) => {
-                let c = CString::new(name)?;
+                let c = CString::new(name)
+                    .map_err(|e| Error::InitFailed(format!("invalid name: {}", e)))?;
                 unsafe {
                     vips_sys::vips_init(c.as_ptr());
                     if leak_test {
@@ -61,7 +62,9 @@ impl VipsInstance {
                 }
                 Ok(VipsInstance {})
             }
-            Err(_) => Err("You cannot create VipsInstance more than once.".into()),
+            Err(_) => Err(Error::Other(
+                "You cannot create VipsInstance more than once.".to_string(),
+            )),
         }
     }
 }

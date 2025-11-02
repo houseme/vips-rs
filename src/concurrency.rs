@@ -11,10 +11,8 @@
 /// ```no_run
 /// use vips::concurrency;
 ///
-/// fn main() {
-///     let n = concurrency();
-///     println!("Current libvips concurrency: {}", n);
-/// }
+/// let n = concurrency();
+/// println!("Current libvips concurrency: {}", n);
 /// ```
 pub fn concurrency() -> i32 {
     unsafe { vips_sys::vips_concurrency_get() }
@@ -29,9 +27,7 @@ pub fn concurrency() -> i32 {
 /// ```no_run
 /// use vips::set_concurrency;
 ///
-/// fn main() {
-///    set_concurrency(4);
-/// }
+/// set_concurrency(4);
 /// ```
 pub fn set_concurrency(n: i32) {
     unsafe { vips_sys::vips_concurrency_set(n) }

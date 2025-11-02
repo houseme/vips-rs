@@ -19,7 +19,7 @@ use std::ffi::CStr;
 ///
 /// # Example
 /// ```no_run
-/// use vips::error::{Error, Result};
+/// use vips::{Error, Result};
 ///
 /// fn example() -> Result<()> {
 ///     // some libvips operation
@@ -32,6 +32,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     InitFailed(String),
     Vips(String),
+    Other(String),
 }
 
 impl std::fmt::Display for Error {
@@ -39,18 +40,25 @@ impl std::fmt::Display for Error {
         match self {
             Error::InitFailed(s) => write!(f, "vips init failed: {}", s),
             Error::Vips(s) => write!(f, "vips error: {}", s),
+            Error::Other(s) => write!(f, "other error: {}", s),
         }
     }
 }
 
 impl std::error::Error for Error {}
 
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Error::Other(e.to_string())
+    }
+}
+
 /// Read and empty the error buffer of libvips
 ///
 /// # Returns
 /// An `Option<String>` containing the error message if there was an error, or `None` if there was no error.
 ///
-pub(crate) fn take_vips_error() -> Option<String> {
+pub fn take_vips_error() -> Option<String> {
     unsafe {
         let ptr = vips_sys::vips_error_buffer();
         if ptr.is_null() {
@@ -76,37 +84,19 @@ pub(crate) fn take_vips_error() -> Option<String> {
 ///
 /// # Example
 /// ```no_run
-/// use vips::error::code_to_result;
-/// fn example() -> vips::error::Result<()> {
-///     let code = unsafe { vips_sys::vips_some_function() }; // hypothetical
+/// use vips::*;
+///
+/// fn example() -> Result<()> {
+///     let code = 1; // hypothetical
 ///     code_to_result(code)
 /// }
 /// ```
 #[allow(dead_code)]
-pub(crate) fn code_to_result(code: i32) -> Result<()> {
+pub fn code_to_result(code: i32) -> Result<()> {
     if code == 0 {
         Ok(())
     } else {
-        let msg = take_vips_error().unwrap_or_else(|| "unknown vips error".to_string());
+        let msg = take_vips_error().unwrap_or_else(|| "Unknown error from libvips".to_string());
         Err(Error::Vips(msg))
     }
-}
-
-/// Retrieve the current libvips error message.
-///
-/// # Returns
-/// A `String` containing the current error message from libvips.
-///
-/// # Example
-/// ```no_run
-/// use vips::current_error;
-///
-/// fn main() {
-///     let error_msg = current_error();
-///     println!("Current libvips error: {}", error_msg);
-/// }
-/// ```
-pub fn current_error() -> String {
-    let msg = unsafe { CStr::from_ptr(vips_sys::vips_error_buffer()) };
-    msg.to_str().unwrap().to_string()
 }

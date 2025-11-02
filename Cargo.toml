@@ -1,6 +1,6 @@
 [package]
 name = "vips"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.5"
 authors = ["elbaro <elbaro@github>", "houseme <housemecn@gmail.com>"]
 edition = "2021"
 description = "Rust bindings for libvips: fast, low-memory image processing with a safe, ergonomic API."

@@ -52,9 +52,11 @@ fn native_lib_dirs() -> Vec<PathBuf> {
 }
 
 fn run_mode(mode: compiletest::common::Mode, subdir: &str) {
-    let mut config = compiletest::Config::default();
-    config.mode = mode;
-    config.src_base = PathBuf::from(format!("tests/{}", subdir));
+    let mut config = compiletest::Config {
+        mode,
+        src_base: PathBuf::from(format!("tests/{}", subdir)),
+        ..Default::default()
+    };
 
     let deps = deps_dir();
     let lib = find_lib("vips");

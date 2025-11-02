@@ -1,6 +1,4 @@
-use crate::current_error;
-use crate::VipsRegion;
-use std::error::Error;
+use crate::{take_vips_error, Error, Result, VipsRegion};
 use std::ffi::CString;
 use std::os::raw::c_void;
 
@@ -9,10 +7,13 @@ use std::os::raw::c_void;
 /// # Example
 /// ```no_run
 /// use vips::*;
-/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///
+/// fn main() -> Result<()> {
+///     let _instance = VipsInstance::new("app_test", true)?;
 ///     let interpolate = VipsInterpolate::bilinear_static();
 ///     let method = interpolate.method();
-///     let region = VipsRegion::new(3, 3, 3)?;
+///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
+///     let region = VipsRegion::new(&img);
 ///     let mut out = vec![0u8; 3]; // assuming 3 channels
 ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
 ///     Ok(())
@@ -55,20 +56,25 @@ impl VipsInterpolate {
     /// # Example
     /// ```no_run
     /// use vips::*;
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     let interpolate = VipsInterpolate::new("bilinear")?;
     ///     let method = interpolate.method();
-    ///     let region = VipsRegion::new(3, 3, 3)?;
+    ///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
+    ///     let region = VipsRegion::new(&img);
     ///     let mut out = vec![0u8; 3]; // assuming 3 channels
     ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
     ///     Ok(())
     /// }
     /// ```
-    pub fn new(nickname: &str) -> Result<VipsInterpolate, Box<dyn Error>> {
-        let nickname = CString::new(nickname)?;
+    pub fn new(nickname: &str) -> Result<VipsInterpolate> {
+        let nickname = CString::new(nickname)
+            .map_err(|_| Error::Other("Invalid nickname: contains null byte".to_string()))?;
         let c = unsafe { vips_sys::vips_interpolate_new(nickname.as_ptr()) };
         if c.is_null() {
-            Err(current_error().into())
+            Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
+                "Unknown error from libvips".to_string()
+            })))
         } else {
             Ok(VipsInterpolate {
                 c,
@@ -85,10 +91,12 @@ impl VipsInterpolate {
     /// # Example
     /// ```no_run
     /// use vips::*;
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     let interpolate = VipsInterpolate::nearest_static();
     ///     let method = interpolate.method();
-    ///     let region = VipsRegion::new(3, 3, 3)?;
+    ///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
+    ///     let region = VipsRegion::new(&img);
     ///     let mut out = vec![0u8; 3]; // assuming 3 channels
     ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
     ///     Ok(())
@@ -109,10 +117,12 @@ impl VipsInterpolate {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     let interpolate = VipsInterpolate::bilinear_static();
     ///     let method = interpolate.method();
-    ///     let region = VipsRegion::new(3, 3, 3)?;
+    ///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
+    ///     let region = VipsRegion::new(&img);
     ///     let mut out = vec![0u8; 3]; // assuming 3 channels
     ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
     ///     Ok(())
@@ -136,10 +146,12 @@ impl VipsInterpolate {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
     ///     let interpolate = VipsInterpolate::bilinear_static();
     ///     let method = interpolate.method();
-    ///     let region = VipsRegion::new(3, 3, 3)?;
+    ///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
+    ///     let region = VipsRegion::new(&img);
     ///     let mut out = vec![0u8; 3]; // assuming 3 channels
     ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
     ///     Ok(())
@@ -159,7 +171,7 @@ impl VipsInterpolate {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///    let interpolate = VipsInterpolate::bilinear_static();
     ///    let window_size = interpolate.window_size();
     ///     println!("Window size: {}", window_size);
@@ -179,7 +191,7 @@ impl VipsInterpolate {
     /// ```no_run
     /// use vips::*;
     ///
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let interpolate = VipsInterpolate::bilinear_static();
     ///     let window_offset = interpolate.window_offset();
     ///     println!("Window offset: {}", window_offset);
@@ -197,10 +209,12 @@ impl VipsInterpolate {
 /// ```no_run
 /// use vips::*;
 ///
-/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// fn main() -> Result<()> {
+///     let _instance = VipsInstance::new("app_test", true)?;
 ///     let interpolate = VipsInterpolate::bilinear_static();
 ///     let method = interpolate.method();
-///     let region = VipsRegion::new(3, 3, 3)?;
+///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
+///     let region = VipsRegion::new(&img);
 ///     let mut out = vec![0u8; 3]; // assuming 3 channels
 ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
 ///     Ok(())
@@ -223,11 +237,13 @@ impl VipsInterpolateMethod {
     /// # Example
     /// ```no_run
     /// use vips::*;
-    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<()> {
     ///     let interpolate = VipsInterpolate::bilinear_static();
-    ///     let method = interpolate.method();
-    ///     let region = VipsRegion::new(3, 3, 3)?;
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
+    ///     let region = VipsRegion::new(&img);
     ///     let mut out = vec![0u8; 3]; // assuming 3 channels
+    ///     let method = interpolate.method();
     ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
     ///     Ok(())
     /// }

@@ -7,7 +7,7 @@
 //! Any operations referencing libvips after `main()` returns (such as in other static destructors or background threads) may result in undefined behavior.
 //! To avoid this, ensure all libvips operations are completed before `main()` exits.
 
-use crate::error::{take_vips_error, Error, Result};
+use crate::{take_vips_error, Error, Result};
 use std::ffi::CString;
 use std::sync::OnceLock;
 
@@ -32,9 +32,10 @@ impl Drop for InitGuard {
 ///
 /// # Example
 /// ```no_run
-/// use vips::init;
-/// fn main() -> Result<(), Box<dyn std::error::Error>> {
-///     init("my_app")?;
+/// use vips::*;
+///
+/// fn main() -> Result<()> {
+///     init(Some("my_app"))?;
 ///     // Your libvips code here
 ///     Ok(())
 /// }
@@ -71,13 +72,11 @@ pub fn init(app_name: Option<&str>) -> Result<()> {
 /// ```no_run
 /// use vips::is_initialized;
 ///
-/// fn main() {
-///     if is_initialized() {
-///         println!("libvips is initialized");
-///     } else {
-///         println!("libvips is not initialized");
-///     }
-/// }
+///  if is_initialized() {
+///     println!("libvips is initialized");
+///  } else {
+///     println!("libvips is not initialized");
+///  }
 /// ```
 pub fn is_initialized() -> bool {
     VIPS.get().is_some()
