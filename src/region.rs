@@ -1,5 +1,5 @@
-use crate::ffi;
 use crate::VipsImage;
+use crate::ffi;
 use std::os::raw::c_void;
 use std::ptr::NonNull;
 

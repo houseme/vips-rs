@@ -21,9 +21,7 @@ impl<'a> OwnedRawImage<'a> {
 /// Map a libvips `VipsImage*` (null = failure) into a safe wrapper.
 pub(crate) fn image_from_ptr<'a>(ptr: *mut vips_sys::VipsImage) -> Result<OwnedRawImage<'a>> {
     let ptr = NonNull::new(ptr).ok_or_else(|| {
-        Error::Vips(take_vips_error().unwrap_or_else(|| {
-            "Unknown error from libvips".to_string()
-        }))
+        Error::Vips(take_vips_error().unwrap_or_else(|| "Unknown error from libvips".to_string()))
     })?;
     Ok(OwnedRawImage {
         ptr,
@@ -40,9 +38,11 @@ pub(crate) fn image_from_ret<'a>(
         0 => image_from_ptr(ptr).map_err(|_| {
             Error::Vips("libvips returned success with a null image pointer".to_string())
         }),
-        -1 => Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
-            "Unknown error from libvips".to_string()
-        }))),
+        -1 => {
+            Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
+                "Unknown error from libvips".to_string()
+            })))
+        }
         _ => Err(Error::Vips("Unknown error from libvips".to_string())),
     }
 }
@@ -51,9 +51,11 @@ pub(crate) fn image_from_ret<'a>(
 pub(crate) fn ret_to_result(ret: c_int) -> Result<()> {
     match ret {
         0 => Ok(()),
-        -1 => Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
-            "Unknown error from libvips".to_string()
-        }))),
+        -1 => {
+            Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
+                "Unknown error from libvips".to_string()
+            })))
+        }
         _ => Err(Error::Vips("Unknown error from libvips".to_string())),
     }
 }

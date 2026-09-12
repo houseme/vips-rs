@@ -215,9 +215,9 @@ impl<'a> VipsImage<'a> {
         };
 
         if c.is_null() {
-            return Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
-                "Unknown error from libvips".to_string()
-            })));
+            return Err(Error::Vips(
+                take_vips_error().unwrap_or_else(|| "Unknown error from libvips".to_string()),
+            ));
         }
 
         let bb: Box<Box<[u8]>> = Box::new(b);
@@ -413,13 +413,7 @@ impl<'a> VipsImage<'a> {
     }
     pub fn draw_point1(&mut self, ink: f64, x: i32, y: i32) -> Result<()> {
         let ret = unsafe {
-            vips_sys::vips_draw_point1(
-                self.c.as_ptr(),
-                ink,
-                x,
-                y,
-                null() as *const c_char,
-            )
+            vips_sys::vips_draw_point1(self.c.as_ptr(), ink, x, y, null() as *const c_char)
         };
         result_draw(ret)
     }
@@ -545,13 +539,7 @@ impl<'a> VipsImage<'a> {
     }
     pub fn draw_flood1(&mut self, ink: f64, x: i32, y: i32) -> Result<()> {
         let ret = unsafe {
-            vips_sys::vips_draw_flood1(
-                self.c.as_ptr(),
-                ink,
-                x,
-                y,
-                null() as *const c_char,
-            )
+            vips_sys::vips_draw_flood1(self.c.as_ptr(), ink, x, y, null() as *const c_char)
         };
         result_draw(ret)
     }
@@ -1071,9 +1059,9 @@ impl<'a> VipsImage<'a> {
                 &mut result_size as *mut usize,
             ) as *mut u8;
             if ptr.is_null() {
-                return Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
-                    "Unknown error from libvips".to_string()
-                })));
+                return Err(Error::Vips(
+                    take_vips_error().unwrap_or_else(|| "Unknown error from libvips".to_string()),
+                ));
             }
             let slice = std::slice::from_raw_parts(ptr as *const u8, result_size);
             let vec = slice.to_vec();
@@ -1094,11 +1082,9 @@ impl<'a> VipsImage<'a> {
                     q,
                     null() as *const c_char,
                 ),
-                None => vips_sys::vips_jpegsave(
-                    self.c.as_ptr(),
-                    path.as_ptr(),
-                    null() as *const c_char,
-                ),
+                None => {
+                    vips_sys::vips_jpegsave(self.c.as_ptr(), path.as_ptr(), null() as *const c_char)
+                }
             }
         };
         result_draw(ret)

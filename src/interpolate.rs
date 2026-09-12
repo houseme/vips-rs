@@ -33,9 +33,9 @@ impl VipsInterpolate {
         // SAFETY: libvips returns a new interpolator or null.
         let c = unsafe { vips_sys::vips_interpolate_new(nickname.as_ptr()) };
         let c = NonNull::new(c).ok_or_else(|| {
-            Error::Vips(take_vips_error().unwrap_or_else(|| {
-                "Unknown error from libvips".to_string()
-            }))
+            Error::Vips(
+                take_vips_error().unwrap_or_else(|| "Unknown error from libvips".to_string()),
+            )
         })?;
         Ok(VipsInterpolate {
             c,
@@ -48,10 +48,7 @@ impl VipsInterpolate {
         // SAFETY: static singleton; never freed by us (`is_static`).
         let c = unsafe { vips_sys::vips_interpolate_nearest_static() };
         let c = NonNull::new(c).expect("vips_interpolate_nearest_static returned null");
-        VipsInterpolate {
-            c,
-            is_static: true,
-        }
+        VipsInterpolate { c, is_static: true }
     }
 
     /// Shared bilinear interpolator (static lifetime inside libvips).
@@ -59,10 +56,7 @@ impl VipsInterpolate {
         // SAFETY: static singleton; never freed by us (`is_static`).
         let c = unsafe { vips_sys::vips_interpolate_bilinear_static() };
         let c = NonNull::new(c).expect("vips_interpolate_bilinear_static returned null");
-        VipsInterpolate {
-            c,
-            is_static: true,
-        }
+        VipsInterpolate { c, is_static: true }
     }
 
     /// Get the interpolation method handle.
