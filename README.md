@@ -86,11 +86,14 @@ thumb.write_to_file("black_ref_200x200.png")?;
 
 | Area | APIs |
 |------|------|
-| IO | `from_file`, `from_memory`, `from_memory_reference`, `from_buffer`, `write_to_file`, `write_to_memory`, `write_to_buffer`, `write_jpeg`, `find_load`/`find_save` |
-| Geometry | `thumbnail`, `resize`, `resize_reduce`, `reduce`, `shrink_box`, `crop`, `embed`, `flip`/`rot`/`rotate`/`autorot`, `zoom`, `insert`, `gravity`, `extract_band`, `bandjoin2`/`bandjoin_const`, `copy`/`copy_memory` |
-| Arithmetic | `add`/`subtract`/`multiply`/`divide`, `linear`/`linear1`, `invert`, `cast`, `colourspace` |
-| Filter | `gaussblur`, `sharpen` |
-| Stats | `avg`, `min_value`, `max_value`, `getpoint` |
+| IO | `from_file`, `from_memory`, `from_memory_reference`, `from_buffer`, `write_to_file`, `write_to_memory`, `write_to_buffer`, `write_jpeg`, `find_load`/`find_save`, `black`/`xyz` |
+| Geometry | `thumbnail`, `resize`, `resize_reduce`, `reduce`, `shrink_box`, `crop`, `embed`, `flip`/`rot`/`rotate`/`autorot`, `zoom`, `insert`, `gravity`, `extract_band`, `bandjoin2`/`bandjoin_const`, `copy`/`copy_memory`, `smartcrop`, `ifthenelse` |
+| Arithmetic | `add`/`subtract`/`multiply`/`divide`, `linear`/`linear1`, `invert`, `pow_const`, `abs`/`sign`/`clamp`, `floor`/`ceil`/`rint` |
+| Math | `sin`/`cos`/`tan`, `ln`/`log10`/`exp`/`exp10` |
+| Relational | `less`/`lesseq`/`more`/`moreeq`/`equal_const`/`notequal_const`, boolean/shift const, `bandand`/`bandor`/`bando` |
+| Color | `cast`, `colourspace`, `falsecolour`, `premultiply`/`unpremultiply` |
+| Filter | `gaussblur`, `sharpen`, `conv`, `erode`/`dilate`, `median`, `sobel`, `canny` |
+| Stats | `avg`, `min_value`, `max_value`, `deviate`, `percent`, `getpoint`, `find_trim` |
 | Properties | `width`, `height`, `size`, `bands` |
 | Drawing | `draw_rect`, `draw_line`, `draw_circle`, `draw_flood`, … (in-place) |
 | Stitching | `merge`, `mosaic`, `match_`, `globalbalance`, `remosaic` |

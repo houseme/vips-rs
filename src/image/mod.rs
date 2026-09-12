@@ -6,8 +6,8 @@ use std::os::raw::{c_char, c_int, c_void};
 use std::path::Path;
 use std::ptr::{null, null_mut};
 use vips_sys::{
-    VipsBandFormat, VipsCombineMode, VipsCompassDirection, VipsDirection, VipsExtend, VipsKernel,
-    VipsSize,
+    VipsBandFormat, VipsCombineMode, VipsCompassDirection, VipsDirection, VipsExtend,
+    VipsInteresting, VipsKernel, VipsSize,
 };
 
 /// Convert a filesystem path to a C string without intermediate UTF-8 `Vec` allocations.
@@ -1541,6 +1541,657 @@ impl<'a> VipsImage<'a> {
         Ok(values)
     }
 
+    /// Standard deviation of all pixels.
+    pub fn deviate(&self) -> Result<f64> {
+        let mut out: f64 = 0.0;
+        // SAFETY: live image; out is written by libvips.
+        let ret =
+            unsafe { vips_sys::vips_deviate(self.c.as_ptr(), &mut out, null() as *const c_char) };
+        ffi::ret_to_result(ret)?;
+        Ok(out)
+    }
+
+    /// Threshold at percentile `percent` of the image histogram (0–100).
+    pub fn percent(&self, percent: f64) -> Result<i32> {
+        let mut threshold: c_int = 0;
+        // SAFETY: live image; threshold is written by libvips.
+        let ret = unsafe {
+            vips_sys::vips_percent(
+                self.c.as_ptr(),
+                percent,
+                &mut threshold,
+                null() as *const c_char,
+            )
+        };
+        ffi::ret_to_result(ret)?;
+        Ok(threshold)
+    }
+
+    /// Bounds of non-background pixels as `(left, top, width, height)`.
+    pub fn find_trim(&self, threshold: Option<f64>, background: Option<&[f64]>) -> Result<(i32, i32, i32, i32)> {
+        let mut left = 0;
+        let mut top = 0;
+        let mut width = 0;
+        let mut height = 0;
+        // SAFETY: live image; out integers written by libvips.
+        // Optional keys omitted when None so libvips defaults apply.
+        let ret = unsafe {
+            match (threshold, background) {
+                (Some(t), Some(bg)) => vips_sys::vips_find_trim(
+                    self.c.as_ptr(),
+                    &mut left,
+                    &mut top,
+                    &mut width,
+                    &mut height,
+                    c"threshold".as_ptr(),
+                    t,
+                    c"background".as_ptr(),
+                    bg.as_ptr() as *mut f64,
+                    bg.len() as i32,
+                    null() as *const c_char,
+                ),
+                (Some(t), None) => vips_sys::vips_find_trim(
+                    self.c.as_ptr(),
+                    &mut left,
+                    &mut top,
+                    &mut width,
+                    &mut height,
+                    c"threshold".as_ptr(),
+                    t,
+                    null() as *const c_char,
+                ),
+                (None, Some(bg)) => vips_sys::vips_find_trim(
+                    self.c.as_ptr(),
+                    &mut left,
+                    &mut top,
+                    &mut width,
+                    &mut height,
+                    c"background".as_ptr(),
+                    bg.as_ptr() as *mut f64,
+                    bg.len() as i32,
+                    null() as *const c_char,
+                ),
+                (None, None) => vips_sys::vips_find_trim(
+                    self.c.as_ptr(),
+                    &mut left,
+                    &mut top,
+                    &mut width,
+                    &mut height,
+                    null() as *const c_char,
+                ),
+            }
+        };
+        ffi::ret_to_result(ret)?;
+        Ok((left, top, width, height))
+    }
+
+    //
+    // ─── MATH / RELATIONAL / BOOLEAN (lua-vips convenience style) ─────────────────
+    //
+
+    /// Apply a math op (`sin`, `cos`, `log`, …).
+    pub fn math(&self, op: vips_sys::VipsOperationMath) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_math(
+                self.c.as_ptr(),
+                &mut out_ptr,
+                op,
+                null() as *const c_char,
+            )
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Sine (degrees).
+    #[inline]
+    pub fn sin(&self) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_sin(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Cosine (degrees).
+    #[inline]
+    pub fn cos(&self) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_cos(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Tangent (degrees).
+    #[inline]
+    pub fn tan(&self) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_tan(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Natural logarithm.
+    #[inline]
+    pub fn ln(&self) -> Result<VipsImage<'a>> {
+        self.math(vips_sys::VipsOperationMath::VIPS_OPERATION_MATH_LOG)
+    }
+
+    /// Base-10 logarithm.
+    #[inline]
+    pub fn log10(&self) -> Result<VipsImage<'a>> {
+        self.math(vips_sys::VipsOperationMath::VIPS_OPERATION_MATH_LOG10)
+    }
+
+    /// e^pixel.
+    #[inline]
+    pub fn exp(&self) -> Result<VipsImage<'a>> {
+        self.math(vips_sys::VipsOperationMath::VIPS_OPERATION_MATH_EXP)
+    }
+
+    /// 10^pixel.
+    #[inline]
+    pub fn exp10(&self) -> Result<VipsImage<'a>> {
+        self.math(vips_sys::VipsOperationMath::VIPS_OPERATION_MATH_EXP10)
+    }
+
+    /// Floor.
+    pub fn floor(&self) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_floor(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Ceiling.
+    pub fn ceil(&self) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_ceil(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Round to nearest integer.
+    pub fn rint(&self) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_rint(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Absolute value.
+    pub fn abs(&self) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_abs(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Sign of each pixel (-1, 0, +1).
+    pub fn sign(&self) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_sign(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Clamp to the band format range.
+    pub fn clamp(&self) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_clamp(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Raise each pixel to `exp`.
+    pub fn pow_const(&self, exp: f64) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_pow_const1(
+                self.c.as_ptr(),
+                &mut out_ptr,
+                exp,
+                null() as *const c_char,
+            )
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Relational compare with a constant → 255/0 mask.
+    pub fn relational_const(
+        &self,
+        op: vips_sys::VipsOperationRelational,
+        c: f64,
+    ) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_relational_const1(
+                self.c.as_ptr(),
+                &mut out_ptr,
+                op,
+                c,
+                null() as *const c_char,
+            )
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// `self < c` mask.
+    #[inline]
+    pub fn less(&self, c: f64) -> Result<VipsImage<'a>> {
+        self.relational_const(vips_sys::VipsOperationRelational::VIPS_OPERATION_RELATIONAL_LESS, c)
+    }
+
+    /// `self <= c` mask.
+    #[inline]
+    pub fn lesseq(&self, c: f64) -> Result<VipsImage<'a>> {
+        self.relational_const(
+            vips_sys::VipsOperationRelational::VIPS_OPERATION_RELATIONAL_LESSEQ,
+            c,
+        )
+    }
+
+    /// `self > c` mask.
+    #[inline]
+    pub fn more(&self, c: f64) -> Result<VipsImage<'a>> {
+        self.relational_const(vips_sys::VipsOperationRelational::VIPS_OPERATION_RELATIONAL_MORE, c)
+    }
+
+    /// `self >= c` mask.
+    #[inline]
+    pub fn moreeq(&self, c: f64) -> Result<VipsImage<'a>> {
+        self.relational_const(
+            vips_sys::VipsOperationRelational::VIPS_OPERATION_RELATIONAL_MOREEQ,
+            c,
+        )
+    }
+
+    /// `self == c` mask.
+    #[inline]
+    pub fn equal_const(&self, c: f64) -> Result<VipsImage<'a>> {
+        self.relational_const(vips_sys::VipsOperationRelational::VIPS_OPERATION_RELATIONAL_EQUAL, c)
+    }
+
+    /// `self != c` mask.
+    #[inline]
+    pub fn notequal_const(&self, c: f64) -> Result<VipsImage<'a>> {
+        self.relational_const(
+            vips_sys::VipsOperationRelational::VIPS_OPERATION_RELATIONAL_NOTEQ,
+            c,
+        )
+    }
+
+    /// Boolean op with a constant.
+    pub fn boolean_const(
+        &self,
+        op: vips_sys::VipsOperationBoolean,
+        c: f64,
+    ) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_boolean_const1(
+                self.c.as_ptr(),
+                &mut out_ptr,
+                op,
+                c,
+                null() as *const c_char,
+            )
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Bitwise AND with constant.
+    #[inline]
+    pub fn and_const(&self, c: f64) -> Result<VipsImage<'a>> {
+        self.boolean_const(vips_sys::VipsOperationBoolean::VIPS_OPERATION_BOOLEAN_AND, c)
+    }
+
+    /// Bitwise OR with constant.
+    #[inline]
+    pub fn or_const(&self, c: f64) -> Result<VipsImage<'a>> {
+        self.boolean_const(vips_sys::VipsOperationBoolean::VIPS_OPERATION_BOOLEAN_OR, c)
+    }
+
+    /// Bitwise XOR with constant.
+    #[inline]
+    pub fn eor_const(&self, c: f64) -> Result<VipsImage<'a>> {
+        self.boolean_const(vips_sys::VipsOperationBoolean::VIPS_OPERATION_BOOLEAN_EOR, c)
+    }
+
+    /// Bitwise left shift by constant.
+    pub fn lshift_const(&self, c: f64) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_lshift_const1(
+                self.c.as_ptr(),
+                &mut out_ptr,
+                c,
+                null() as *const c_char,
+            )
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Bitwise right shift by constant.
+    pub fn rshift_const(&self, c: f64) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_rshift_const1(
+                self.c.as_ptr(),
+                &mut out_ptr,
+                c,
+                null() as *const c_char,
+            )
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Collapse all bands with a boolean op (`and`/`or`/`eor`).
+    pub fn bandbool(&self, op: vips_sys::VipsOperationBoolean) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_bandbool(
+                self.c.as_ptr(),
+                &mut out_ptr,
+                op,
+                null() as *const c_char,
+            )
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Collapse bands with AND.
+    #[inline]
+    pub fn bandand(&self) -> Result<VipsImage<'a>> {
+        self.bandbool(vips_sys::VipsOperationBoolean::VIPS_OPERATION_BOOLEAN_AND)
+    }
+
+    /// Collapse bands with OR.
+    #[inline]
+    pub fn bandor(&self) -> Result<VipsImage<'a>> {
+        self.bandbool(vips_sys::VipsOperationBoolean::VIPS_OPERATION_BOOLEAN_OR)
+    }
+
+    /// Collapse bands with XOR.
+    #[inline]
+    pub fn bando(&self) -> Result<VipsImage<'a>> {
+        self.bandbool(vips_sys::VipsOperationBoolean::VIPS_OPERATION_BOOLEAN_EOR)
+    }
+
+    /// Mean of each pixel across bands → 1-band image.
+    pub fn bandmean(&self) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_bandmean(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Split into one single-band image per band.
+    pub fn bandsplit(&self) -> Result<Vec<VipsImage<'a>>> {
+        let n = self.bands() as i32;
+        let mut out = Vec::with_capacity(n as usize);
+        for band in 0..n {
+            out.push(self.extract_band(band)?);
+        }
+        Ok(out)
+    }
+
+    //
+    // ─── FILTER / MORPH / EDGE ────────────────────────────────────────────────────
+    //
+
+    /// Convolve with a mask image.
+    pub fn conv(&self, mask: &VipsImage) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: both images live for the call.
+        let ret = unsafe {
+            vips_sys::vips_conv(
+                self.c.as_ptr(),
+                &mut out_ptr,
+                mask.as_ptr(),
+                null() as *const c_char,
+            )
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Morphological op with a structuring element.
+    pub fn morph(
+        &self,
+        mask: &VipsImage,
+        op: vips_sys::VipsOperationMorphology,
+    ) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: both images live for the call.
+        let ret = unsafe {
+            vips_sys::vips_morph(
+                self.c.as_ptr(),
+                &mut out_ptr,
+                mask.as_ptr(),
+                op,
+                null() as *const c_char,
+            )
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Erode with structuring element.
+    #[inline]
+    pub fn erode(&self, mask: &VipsImage) -> Result<VipsImage<'a>> {
+        self.morph(mask, vips_sys::VipsOperationMorphology::VIPS_OPERATION_MORPHOLOGY_ERODE)
+    }
+
+    /// Dilate with structuring element.
+    #[inline]
+    pub fn dilate(&self, mask: &VipsImage) -> Result<VipsImage<'a>> {
+        self.morph(mask, vips_sys::VipsOperationMorphology::VIPS_OPERATION_MORPHOLOGY_DILATE)
+    }
+
+    /// Rank filter (median when `index = w*h/2`).
+    pub fn rank(&self, width: i32, height: i32, index: i32) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_rank(
+                self.c.as_ptr(),
+                &mut out_ptr,
+                width,
+                height,
+                index,
+                null() as *const c_char,
+            )
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// `size × size` median filter.
+    #[inline]
+    pub fn median(&self, size: i32) -> Result<VipsImage<'a>> {
+        let index = (size * size) / 2;
+        self.rank(size, size, index)
+    }
+
+    /// Sobel edge magnitude.
+    pub fn sobel(&self) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_sobel(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Canny edge detector.
+    pub fn canny(&self, sigma: Option<f64>) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            match sigma {
+                Some(s) => vips_sys::vips_canny(
+                    self.c.as_ptr(),
+                    &mut out_ptr,
+                    c"sigma".as_ptr(),
+                    s,
+                    null() as *const c_char,
+                ),
+                None => vips_sys::vips_canny(
+                    self.c.as_ptr(),
+                    &mut out_ptr,
+                    null() as *const c_char,
+                ),
+            }
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    //
+    // ─── LOGIC / CROP / COLOR extras ──────────────────────────────────────────────
+    //
+
+    /// Pick pixels from `then` or `else` using this image as a 0/non-zero mask.
+    pub fn ifthenelse(
+        &self,
+        then: &VipsImage,
+        els: &VipsImage,
+    ) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: all three images live for the call.
+        let ret = unsafe {
+            vips_sys::vips_ifthenelse(
+                self.c.as_ptr(),
+                then.as_ptr(),
+                els.as_ptr(),
+                &mut out_ptr,
+                null() as *const c_char,
+            )
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Attention-based crop to `width`×`height`.
+    pub fn smartcrop(
+        &self,
+        width: i32,
+        height: i32,
+        interesting: Option<VipsInteresting>,
+    ) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image; optional interesting key omitted when None.
+        let ret = unsafe {
+            match interesting {
+                Some(i) => vips_sys::vips_smartcrop(
+                    self.c.as_ptr(),
+                    &mut out_ptr,
+                    width,
+                    height,
+                    c"interesting".as_ptr(),
+                    i,
+                    null() as *const c_char,
+                ),
+                None => vips_sys::vips_smartcrop(
+                    self.c.as_ptr(),
+                    &mut out_ptr,
+                    width,
+                    height,
+                    null() as *const c_char,
+                ),
+            }
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// False-colour visualisation.
+    pub fn falsecolour(&self) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_falsecolour(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Premultiply alpha.
+    pub fn premultiply(&self, max_alpha: Option<f64>) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            match max_alpha {
+                Some(m) => vips_sys::vips_premultiply(
+                    self.c.as_ptr(),
+                    &mut out_ptr,
+                    c"max-alpha".as_ptr(),
+                    m,
+                    null() as *const c_char,
+                ),
+                None => vips_sys::vips_premultiply(
+                    self.c.as_ptr(),
+                    &mut out_ptr,
+                    null() as *const c_char,
+                ),
+            }
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Undo premultiply.
+    pub fn unpremultiply(&self, max_alpha: Option<f64>) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            match max_alpha {
+                Some(m) => vips_sys::vips_unpremultiply(
+                    self.c.as_ptr(),
+                    &mut out_ptr,
+                    c"max-alpha".as_ptr(),
+                    m,
+                    null() as *const c_char,
+                ),
+                None => vips_sys::vips_unpremultiply(
+                    self.c.as_ptr(),
+                    &mut out_ptr,
+                    null() as *const c_char,
+                ),
+            }
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Sequential access hint (streaming pipelines).
+    pub fn sequential(&self) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: live image.
+        let ret = unsafe {
+            vips_sys::vips_sequential(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
     //
     // ─── IO ─────────────────────────────────────────────────────────────────────────
     //
@@ -1677,4 +2328,34 @@ pub fn find_save(path: impl AsRef<Path>) -> Option<String> {
     // SAFETY: non-null NUL-terminated string from libvips.
     let s = unsafe { std::ffi::CStr::from_ptr(ptr) };
     s.to_str().ok().map(str::to_owned)
+}
+
+/// Create a one-band 8-bit black image (`vips_black`).
+pub fn black(width: u32, height: u32) -> Result<VipsImage<'static>> {
+    let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+    // SAFETY: pure constructor.
+    let ret = unsafe {
+        vips_sys::vips_black(
+            &mut out_ptr,
+            width as i32,
+            height as i32,
+            null() as *const c_char,
+        )
+    };
+    result_with_ret(out_ptr, ret)
+}
+
+/// Create a two-band coordinate image (`vips_xyz`).
+pub fn xyz(width: u32, height: u32) -> Result<VipsImage<'static>> {
+    let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+    // SAFETY: pure constructor.
+    let ret = unsafe {
+        vips_sys::vips_xyz(
+            &mut out_ptr,
+            width as i32,
+            height as i32,
+            null() as *const c_char,
+        )
+    };
+    result_with_ret(out_ptr, ret)
 }

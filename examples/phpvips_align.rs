@@ -55,8 +55,35 @@ fn main() -> Result<()> {
     let loader = find_load("./examples/images/kodim01.png");
     assert!(loader.is_some());
 
+    // lua-vips / vipsgen style conveniences
+    let mask = cropped.less(200.0)?;
+    assert_eq!(mask.size(), (32, 32));
+    let selected = mask.bandand()?.ifthenelse(&cropped, &cropped.linear1(0.5, 0.0)?)?;
+    assert_eq!(selected.size(), (32, 32));
+
+    let floored = cropped.floor()?.ceil()?.rint()?;
+    assert_eq!(floored.size(), (32, 32));
+
+    let med = cropped.median(3)?;
+    assert_eq!(med.size(), (32, 32));
+
+    let edges = cropped.sobel()?;
+    assert_eq!(edges.size(), (32, 32));
+
+    let black_img = black(8, 8)?;
+    assert_eq!(black_img.size(), (8, 8));
+
+    let coord = xyz(4, 4)?;
+    assert_eq!(coord.bands(), 2);
+
+    let split = cropped.bandsplit()?;
+    assert_eq!(split.len(), 3);
+
+    let d = cropped.deviate()?;
+    assert!(d.is_finite());
+
     println!(
-        "aligned ops ok: crop={:?} avg={avg:.3} loader={loader:?} jpg={} png={}",
+        "aligned ops ok: crop={:?} avg={avg:.3} deviate={d:.3} loader={loader:?} jpg={} png={}",
         cropped.size(),
         jpg.len(),
         png.len()
