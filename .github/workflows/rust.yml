@@ -70,9 +70,8 @@ jobs:
         run: |
           sudo apt-get update 
           sudo apt-get install -y pkg-config libvips libvips-dev libvips-tools
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           components: clippy
       - name: Run clippy check
         run: cargo clippy --all-features
@@ -94,9 +93,7 @@ jobs:
           sudo apt-get update 
           sudo apt-get install -y pkg-config libvips libvips-dev libvips-tools
       - name: Install rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
+        uses: dtolnay/rust-toolchain@stable
       - name: Run cargo test
         run: cargo test --all-features
   publish_on_crates_io:
