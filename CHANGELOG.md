@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Encapsulate raw libvips pointers: `VipsImage`/`VipsRegion`/`VipsInterpolate` store `NonNull` privately; expose only `as_ptr()` for FFI bridges.
+- Internal `ffi` module centralizes null-checks, `unref`, and status-code mapping.
+- Hide `image_postclose`; stop re-exporting `vips_call` under a safe-looking alias.
+- `VipsRegion::new` returns `Option` (allocation can fail).
+- Document the crate safety model in `lib.rs`.
+
 ## [0.1.0] - 2026-09-13
 
 First stable crates.io release. Resolves `vips-sys` 0.2.0 from crates.io.

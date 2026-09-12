@@ -1,254 +1,100 @@
+use crate::ffi;
 use crate::{Error, Result, VipsRegion, take_vips_error};
 use std::ffi::CString;
 use std::os::raw::c_void;
+use std::ptr::NonNull;
 
-/// VipsInterpolate struct wrapping libvips VipsInterpolate
-///
-/// # Example
-/// ```no_run
-/// use vips::*;
-///
-/// fn main() -> Result<()> {
-///     let _instance = VipsInstance::new("app_test", true)?;
-///     let interpolate = VipsInterpolate::bilinear_static();
-///     let method = interpolate.method();
-///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
-///     let region = VipsRegion::new(&img);
-///     let mut out = vec![0u8; 3]; // assuming 3 channels
-///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
-///     Ok(())
-/// }
-/// ```
+/// Safe RAII wrapper around a libvips `VipsInterpolate*`.
 pub struct VipsInterpolate {
-    pub c: *mut vips_sys::VipsInterpolate,
+    c: NonNull<vips_sys::VipsInterpolate>,
     is_static: bool,
 }
 
 impl Drop for VipsInterpolate {
     fn drop(&mut self) {
         if !self.is_static {
-            unsafe {
-                vips_sys::g_object_unref(self.c as *mut c_void);
-            }
+            // SAFETY: non-static interpolators are uniquely owned.
+            unsafe { ffi::unref(self.c.as_ptr().cast::<c_void>()) };
         }
     }
 }
 
 impl VipsInterpolate {
-    //
-    // ─── STATIC ─────────────────────────────────────────────────────────────────────
-    //
+    /// Borrow the underlying pointer for FFI. Valid while `self` lives.
+    #[inline]
+    pub fn as_ptr(&self) -> *mut vips_sys::VipsInterpolate {
+        self.c.as_ptr()
+    }
 
-    // will not implement: vips_interpolate ()
-
-    //
-    // ─── CONSTRUCTORS ───────────────────────────────────────────────────────────────
-    //
-
-    /// Create a new VipsInterpolate by nickname
-    ///
-    /// # Arguments
-    /// * `nickname` - The nickname of the interpolation method
-    ///
-    /// # Errors
-    /// Returns an error if the nickname is invalid
-    ///
-    /// # Example
-    /// ```no_run
-    /// use vips::*;
-    /// fn main() -> Result<()> {
-    ///     let _instance = VipsInstance::new("app_test", true)?;
-    ///     let interpolate = VipsInterpolate::new("bilinear")?;
-    ///     let method = interpolate.method();
-    ///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
-    ///     let region = VipsRegion::new(&img);
-    ///     let mut out = vec![0u8; 3]; // assuming 3 channels
-    ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
-    ///     Ok(())
-    /// }
-    /// ```
+    /// Create a new interpolator by nickname (e.g. `"bilinear"`).
     pub fn new(nickname: &str) -> Result<VipsInterpolate> {
         let nickname = CString::new(nickname)
             .map_err(|_| Error::Other("Invalid nickname: contains null byte".to_string()))?;
+        // SAFETY: libvips returns a new interpolator or null.
         let c = unsafe { vips_sys::vips_interpolate_new(nickname.as_ptr()) };
-        if c.is_null() {
-            Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
+        let c = NonNull::new(c).ok_or_else(|| {
+            Error::Vips(take_vips_error().unwrap_or_else(|| {
                 "Unknown error from libvips".to_string()
-            })))
-        } else {
-            Ok(VipsInterpolate {
-                c,
-                is_static: false,
-            })
+            }))
+        })?;
+        Ok(VipsInterpolate {
+            c,
+            is_static: false,
+        })
+    }
+
+    /// Shared nearest-neighbour interpolator (static lifetime inside libvips).
+    pub fn nearest_static() -> VipsInterpolate {
+        // SAFETY: static singleton; never freed by us (`is_static`).
+        let c = unsafe { vips_sys::vips_interpolate_nearest_static() };
+        let c = NonNull::new(c).expect("vips_interpolate_nearest_static returned null");
+        VipsInterpolate {
+            c,
+            is_static: true,
         }
     }
 
-    /// Create a new nearest static VipsInterpolate
-    ///
-    /// # Returns
-    /// A VipsInterpolate instance for nearest neighbor interpolation
-    ///
-    /// # Example
-    /// ```no_run
-    /// use vips::*;
-    /// fn main() -> Result<()> {
-    ///     let _instance = VipsInstance::new("app_test", true)?;
-    ///     let interpolate = VipsInterpolate::nearest_static();
-    ///     let method = interpolate.method();
-    ///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
-    ///     let region = VipsRegion::new(&img);
-    ///     let mut out = vec![0u8; 3]; // assuming 3 channels
-    ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
-    ///     Ok(())
-    /// }
-    /// ```
-    ///
-    pub fn nearest_static() -> VipsInterpolate {
-        let c = unsafe { vips_sys::vips_interpolate_nearest_static() };
-        VipsInterpolate { c, is_static: true }
-    }
-
-    /// Create a new bilinear static VipsInterpolate
-    ///
-    /// # Returns
-    /// A VipsInterpolate instance for bilinear interpolation
-    ///
-    /// # Example
-    /// ```no_run
-    /// use vips::*;
-    ///
-    /// fn main() -> Result<()> {
-    ///     let _instance = VipsInstance::new("app_test", true)?;
-    ///     let interpolate = VipsInterpolate::bilinear_static();
-    ///     let method = interpolate.method();
-    ///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
-    ///     let region = VipsRegion::new(&img);
-    ///     let mut out = vec![0u8; 3]; // assuming 3 channels
-    ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
-    ///     Ok(())
-    /// }
-    /// ```
+    /// Shared bilinear interpolator (static lifetime inside libvips).
     pub fn bilinear_static() -> VipsInterpolate {
+        // SAFETY: static singleton; never freed by us (`is_static`).
         let c = unsafe { vips_sys::vips_interpolate_bilinear_static() };
-        VipsInterpolate { c, is_static: true }
+        let c = NonNull::new(c).expect("vips_interpolate_bilinear_static returned null");
+        VipsInterpolate {
+            c,
+            is_static: true,
+        }
     }
 
-    //
-    // ─── PROPERTIES ─────────────────────────────────────────────────────────────────
-    //
-
-    /// Get the interpolation method
-    ///
-    /// # Returns
-    /// A VipsInterpolateMethod instance representing the interpolation method
-    ///
-    /// # Example
-    /// ```no_run
-    /// use vips::*;
-    ///
-    /// fn main() -> Result<()> {
-    ///     let _instance = VipsInstance::new("app_test", true)?;
-    ///     let interpolate = VipsInterpolate::bilinear_static();
-    ///     let method = interpolate.method();
-    ///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
-    ///     let region = VipsRegion::new(&img);
-    ///     let mut out = vec![0u8; 3]; // assuming 3 channels
-    ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
-    ///     Ok(())
-    /// }
-    /// ```
+    /// Get the interpolation method handle.
     pub fn method(&self) -> VipsInterpolateMethod {
-        let c = unsafe { vips_sys::vips_interpolate_get_method(self.c) };
+        // SAFETY: `self.c` is a live interpolator.
+        let c = unsafe { vips_sys::vips_interpolate_get_method(self.c.as_ptr()) };
         VipsInterpolateMethod { c }
     }
 
-    /// Get the window size
-    ///
-    /// # Returns
-    /// The window size used by the interpolation method
-    ///
-    /// # Example
-    /// ```no_run
-    /// use vips::*;
-    ///
-    /// fn main() -> Result<()> {
-    ///    let interpolate = VipsInterpolate::bilinear_static();
-    ///    let window_size = interpolate.window_size();
-    ///     println!("Window size: {}", window_size);
-    ///     Ok(())
-    /// }
-    /// ```
+    /// Window size used by the interpolator.
     pub fn window_size(&self) -> i32 {
-        unsafe { vips_sys::vips_interpolate_get_window_size(self.c) }
+        // SAFETY: `self.c` is a live interpolator.
+        unsafe { vips_sys::vips_interpolate_get_window_size(self.c.as_ptr()) }
     }
 
-    /// Get the window offset
-    ///
-    /// # Returns
-    /// The window offset used by the interpolation method
-    ///
-    /// # Example
-    /// ```no_run
-    /// use vips::*;
-    ///
-    /// fn main() -> Result<()> {
-    ///     let interpolate = VipsInterpolate::bilinear_static();
-    ///     let window_offset = interpolate.window_offset();
-    ///     println!("Window offset: {}", window_offset);
-    ///     Ok(())
-    /// }
-    /// ```
+    /// Window offset used by the interpolator.
     pub fn window_offset(&self) -> i32 {
-        unsafe { vips_sys::vips_interpolate_get_window_offset(self.c) }
+        // SAFETY: `self.c` is a live interpolator.
+        unsafe { vips_sys::vips_interpolate_get_window_offset(self.c.as_ptr()) }
     }
 }
 
-/// Function pointer type for VipsInterpolateMethod
-///
-/// # Example
-/// ```no_run
-/// use vips::*;
-///
-/// fn main() -> Result<()> {
-///     let _instance = VipsInstance::new("app_test", true)?;
-///     let interpolate = VipsInterpolate::bilinear_static();
-///     let method = interpolate.method();
-///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
-///     let region = VipsRegion::new(&img);
-///     let mut out = vec![0u8; 3]; // assuming 3 channels
-///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
-///     Ok(())
-/// }
-/// ```
+/// Function-pointer wrapper for a `VipsInterpolate` implementation.
 pub struct VipsInterpolateMethod {
     c: vips_sys::VipsInterpolateMethod,
 }
 
 impl VipsInterpolateMethod {
-    /// Call the interpolation method
+    /// Interpolate one pixel into `out`.
     ///
-    /// # Arguments
-    /// * `interpolate` - The VipsInterpolate instance
-    /// * `in_` - The input VipsRegion
-    /// * `out` - The output buffer to write the interpolated pixel
-    /// * `x` - The x coordinate to interpolate
-    /// * `y` - The y coordinate to interpolate
-    ///
-    /// # Example
-    /// ```no_run
-    /// use vips::*;
-    /// fn main() -> Result<()> {
-    ///     let interpolate = VipsInterpolate::bilinear_static();
-    ///     let _instance = VipsInstance::new("app_test", true)?;
-    ///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
-    ///     let region = VipsRegion::new(&img);
-    ///     let mut out = vec![0u8; 3]; // assuming 3 channels
-    ///     let method = interpolate.method();
-    ///     method.call(&interpolate, &region, &mut out, 1.5, 1.5);
-    ///     Ok(())
-    /// }
-    /// ```
-    ///
+    /// `out` must be large enough for the interpolator's window (use
+    /// [`VipsInterpolate::window_size`] as a guide).
     pub fn call(
         &self,
         interpolate: &VipsInterpolate,
@@ -257,6 +103,18 @@ impl VipsInterpolateMethod {
         x: f64,
         y: f64,
     ) {
-        unsafe { self.c.unwrap()(interpolate.c, out.as_mut_ptr() as *mut c_void, in_.c, x, y) }
+        // SAFETY: method ptr is valid for the interpolator; region/buffer live
+        // for the duration of the call. Caller sized `out` for the window.
+        unsafe {
+            if let Some(func) = self.c {
+                func(
+                    interpolate.as_ptr(),
+                    out.as_mut_ptr() as *mut c_void,
+                    in_.as_ptr(),
+                    x,
+                    y,
+                );
+            }
+        }
     }
 }

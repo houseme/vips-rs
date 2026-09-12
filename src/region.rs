@@ -1,51 +1,31 @@
+use crate::ffi;
 use crate::VipsImage;
 use std::os::raw::c_void;
+use std::ptr::NonNull;
 
-/// VipsRegion struct wrapping libvips VipsRegion
-///
-/// # Example
-/// ```no_run
-/// use vips::*;
-///
-/// fn main() -> Result<()> {
-///     let _instance = VipsInstance::new("app_test", true)?;
-///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
-///     let region = VipsRegion::new(&img);
-///     Ok(())
-/// }
-/// ```
+/// Safe RAII wrapper around a libvips `VipsRegion*`.
 pub struct VipsRegion {
-    // The underlying C VipsRegion pointer
-    pub c: *mut vips_sys::VipsRegion,
+    c: NonNull<vips_sys::VipsRegion>,
 }
 
 impl VipsRegion {
-    /// Create a new VipsRegion for the given image
-    ///
-    /// # Arguments
-    /// * `image` - The VipsImage to create the region for
-    ///
-    /// # Example
-    /// ```no_run
-    /// use vips::*;
-    ///
-    /// fn main() -> Result<()> {
-    ///     let _instance = VipsInstance::new("app_test", true)?;
-    ///     let img = VipsImage::from_file("examples/images/kodim01.png")?;
-    ///     let region = VipsRegion::new(&img);
-    ///     Ok(())
-    /// }
-    /// ```
-    pub fn new(image: &VipsImage) -> VipsRegion {
-        let c = unsafe { vips_sys::vips_region_new(image.c) };
-        VipsRegion { c }
+    /// Create a new region for `image`.
+    pub fn new(image: &VipsImage) -> Option<VipsRegion> {
+        // SAFETY: `image.as_ptr()` is a live VipsImage; region is owned by us.
+        let c = unsafe { vips_sys::vips_region_new(image.as_ptr()) };
+        NonNull::new(c).map(|c| VipsRegion { c })
+    }
+
+    /// Borrow the underlying pointer for FFI. Valid while `self` lives.
+    #[inline]
+    pub fn as_ptr(&self) -> *mut vips_sys::VipsRegion {
+        self.c.as_ptr()
     }
 }
 
 impl Drop for VipsRegion {
     fn drop(&mut self) {
-        unsafe {
-            vips_sys::g_object_unref(self.c as *mut c_void);
-        }
+        // SAFETY: exclusive ownership of a live GObject region.
+        unsafe { ffi::unref(self.c.as_ptr().cast::<c_void>()) };
     }
 }

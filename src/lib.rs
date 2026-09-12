@@ -1,30 +1,28 @@
-//! vips-rs: Lightweight safety encapsulation of libvips (infrastructure such as initialization, concurrency, caching, versioning, etc.)
+//! vips-rs: Lightweight safety encapsulation of libvips (initialization,
+//! concurrency, caching, versioning, and image IO).
 //!
-//! Characteristics:
-//! - Remove 'lazy_static' and complete the global initialization with the standard library 'OnceLock';
-//! - Provide 'init()'/'is_initialized()', concurrency/cache control, version information;
-//! - Unified error handling (grab 'vips_error_buffer()');
-//! - Documentation examples with basic tests.
+//! ## Safety model
 //!
-//! Usage examples:
+//! - Raw libvips pointers are **private** to each wrapper. Use safe methods, or
+//!   `as_ptr()` when bridging to lower-level FFI (the pointer is valid only
+//!   while the wrapper lives; do not unref it).
+//! - All `unsafe` blocks are concentrated in this crate with `SAFETY:` notes.
+//! - Global `init` is process-locked; RAII types unref on `Drop`.
+//!
 //! ```no_run
 //! use vips::{init, set_concurrency};
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     // initialization (idempotent), recommended to call as early as possible
 //!     init(Some("my-app"))?;
-//!
-//!     // Configure concurrency (default = number of CPU cores)
 //!     vips::set_concurrency(4);
-//!
-//!     // Tuning the cache
 //!     vips::set_max_operations(1000);
 //!     vips::set_max_mem_bytes(256 * 1024 * 1024);
 //!     vips::set_max_files(100);
-//!
 //!     Ok(())
 //! }
 //! ```
+
+mod ffi;
 
 pub use crate::cache::*;
 pub use crate::concurrency::{concurrency, set_concurrency};
@@ -64,5 +62,5 @@ pub use vips_sys::{
     VipsPCS, VipsPrecision, VipsRect, VipsSize, VipsToken,
 };
 
-// Simply re-export, no more repeated declaration of extern "C"
-pub use vips_sys::vips_call as call;
+// Escape hatch for advanced callers — inherently `unsafe` (raw varargs into libvips).
+pub use vips_sys::vips_call;
