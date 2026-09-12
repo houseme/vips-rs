@@ -53,7 +53,7 @@ impl VipsInstance {
         match IS_INSTANTIATED.compare_exchange(false, true, Relaxed, Relaxed) {
             Ok(_) => {
                 let c = CString::new(name)
-                    .map_err(|e| Error::InitFailed(format!("invalid name: {}", e)))?;
+                    .map_err(|e| Error::InitFailed(format!("invalid name: {e}")))?;
                 unsafe {
                     vips_sys::vips_init(c.as_ptr());
                     if leak_test {

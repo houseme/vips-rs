@@ -14,6 +14,7 @@
 /// let n = concurrency();
 /// println!("Current libvips concurrency: {}", n);
 /// ```
+#[inline]
 pub fn concurrency() -> i32 {
     unsafe { vips_sys::vips_concurrency_get() }
 }

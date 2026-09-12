@@ -38,9 +38,9 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::InitFailed(s) => write!(f, "vips init failed: {}", s),
-            Error::Vips(s) => write!(f, "vips error: {}", s),
-            Error::Other(s) => write!(f, "other error: {}", s),
+            Error::InitFailed(s) => write!(f, "vips init failed: {s}"),
+            Error::Vips(s) => write!(f, "vips error: {s}"),
+            Error::Other(s) => write!(f, "other error: {s}"),
         }
     }
 }
@@ -91,6 +91,7 @@ pub fn take_vips_error() -> Option<String> {
 ///     code_to_result(code)
 /// }
 /// ```
+#[inline]
 pub fn code_to_result(code: i32) -> Result<()> {
     if code == 0 {
         Ok(())

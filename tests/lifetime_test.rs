@@ -11,7 +11,7 @@ fn deps_dir() -> PathBuf {
 
 fn find_lib(name: &str) -> PathBuf {
     let dir = deps_dir();
-    let prefix = format!("lib{}-", name);
+    let prefix = format!("lib{name}-");
     for entry in fs::read_dir(&dir).expect("read deps dir failed") {
         let p = entry.unwrap().path();
         let fname = p.file_name().unwrap().to_string_lossy();
@@ -21,7 +21,7 @@ fn find_lib(name: &str) -> PathBuf {
             return p;
         }
     }
-    panic!("cannot find compiled crate {}", name);
+    panic!("cannot find compiled crate {name}");
 }
 
 fn native_lib_dirs() -> Vec<PathBuf> {
@@ -54,7 +54,7 @@ fn native_lib_dirs() -> Vec<PathBuf> {
 fn run_mode(mode: compiletest::common::Mode, subdir: &str) {
     let mut config = compiletest::Config {
         mode,
-        src_base: PathBuf::from(format!("tests/{}", subdir)),
+        src_base: PathBuf::from(format!("tests/{subdir}")),
         ..Default::default()
     };
 

@@ -1,4 +1,4 @@
-//! Global initialization: Ensures initialization only once with 'OnceLock' and automatically shuts down when the process exits.
+//! Global initialization: Ensures initialization only once with `OnceLock` and automatically shuts down when the process exits.
 //!
 //! # Safety Note
 //!
@@ -24,8 +24,11 @@ impl Drop for InitGuard {
     }
 }
 
-/// Initialize libvips (idempotent). `app_name` can be used for logging and diagnostic display.
-/// If `app_name` is `None`, a default name "vips-rs" will be used.
+/// Initialize libvips (idempotent, thread-safe). `app_name` is used for logging
+/// and diagnostics; defaults to `"vips-rs"` when `None`.
+///
+/// Concurrent first-time callers are synchronized by `OnceLock` — only the
+/// winning thread performs `vips_init`.
 ///
 /// # Errors
 /// Returns `Error::InitFailed` if initialization fails.
@@ -41,13 +44,12 @@ impl Drop for InitGuard {
 /// }
 /// ```
 pub fn init(app_name: Option<&str>) -> Result<()> {
-    // If initialized, return directly.
     if VIPS.get().is_some() {
         return Ok(());
     }
 
-    let cstr = CString::new(app_name.unwrap_or("vips-rs")) // argv0
-        .map_err(|e| Error::InitFailed(format!("invalid app name: {}", e)))?;
+    let cstr = CString::new(app_name.unwrap_or("vips-rs"))
+        .map_err(|e| Error::InitFailed(format!("invalid app name: {e}")))?;
 
     let rc = unsafe { vips_sys::vips_init(cstr.as_ptr()) };
     if rc != 0 {
@@ -55,20 +57,18 @@ pub fn init(app_name: Option<&str>) -> Result<()> {
         return Err(Error::InitFailed(msg));
     }
 
-    // Establish a one-time guard, which will automatically drop when the process exits -> vips_shutdown()
+    // Losing a race here means another thread already installed the guard;
+    // libvips tolerates extra init calls, and shutdown remains once-only.
     let _ = VIPS.set(InitGuard);
     Ok(())
 }
 
 /// Is it currently initialized?
 ///
-/// # Safety
-/// This function is safe to call from multiple threads.
-///
 /// # Returns
 /// `true` if libvips has been initialized, `false` otherwise.
 ///
-/// /// # Example
+/// # Example
 /// ```no_run
 /// use vips::is_initialized;
 ///
@@ -78,6 +78,7 @@ pub fn init(app_name: Option<&str>) -> Result<()> {
 ///     println!("libvips is not initialized");
 ///  }
 /// ```
+#[inline]
 pub fn is_initialized() -> bool {
     VIPS.get().is_some()
 }
