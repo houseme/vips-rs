@@ -14,12 +14,13 @@ Rust bindings for libvips: fast, low-memory image processing with a safe, ergono
 - Safe wrappers over common libvips APIs
 - RAII-style initialization/shutdown management
 - Practical helpers for reading, transforming, and writing images
+- Lazy pipeline evaluation (libvips demand-driven processing)
 
 Documentation: https://houseme.github.io/vips-rs/vips/
 
 ## Requirements
 
-- Rust >= 1.85.0
+- Rust >= 1.85.0 (edition 2024)
 - libvips installed on your system
     - macOS: `brew install vips`
     - Linux: `apt-get install -y pkg-config libvips libvips-dev` (or your distro equivalent)
@@ -30,7 +31,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-vips = "*"
+vips = "0.1"
 ```
 
 ## Quick start
@@ -60,18 +61,18 @@ fn main() -> Result<()> {
 
 ```rust
 let pixels = vec![0u8; 256 * 256 * 3]; // RGB
-let img = VipsImage::from_memory(pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR) ?;
-let thumb = img.thumbnail(200, 200, VipsSize::VIPS_SIZE_FORCE) ?;
-thumb.write_to_file("black_200x200.png") ?;
+let img = VipsImage::from_memory(pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR)?;
+let thumb = img.thumbnail(200, 200, VipsSize::VIPS_SIZE_FORCE)?;
+thumb.write_to_file("black_200x200.png")?;
 ```
 
 - Borrow a pixel buffer (make sure the backing data outlives all derived images):
 
 ```rust
 let pixels = vec![0u8; 256 * 256 * 3];
-let img = VipsImage::from_memory_reference(&pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR) ?; // The returned image lifetime is tied to `pixels`
-let thumb = img.thumbnail(200, 200, VipsSize::VIPS_SIZE_FORCE) ?;
-thumb.write_to_file("black_ref_200x200.png") ?;
+let img = VipsImage::from_memory_reference(&pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR)?;
+let thumb = img.thumbnail(200, 200, VipsSize::VIPS_SIZE_FORCE)?;
+thumb.write_to_file("black_ref_200x200.png")?;
 ```
 
 ## Lifetimes and common pitfalls
@@ -84,13 +85,21 @@ thumb.write_to_file("black_ref_200x200.png") ?;
 
 ## API highlights
 
-- Image IO: from file, from raw memory, from borrowed memory, save to file
-- Geometry: thumbnail/resize/reduce/shrink
-- Drawing: lines, circles, flood fills (in-place)
-- Stitching: `merge`, `mosaic`, `match_`, `globalbalance`
-- Interpolation: nearest, bilinear, or custom
+| Area | APIs |
+|------|------|
+| IO | `from_file`, `from_memory`, `from_memory_reference`, `from_buffer`, `write_to_file`, `write_to_memory`, `write_jpeg` |
+| Geometry | `thumbnail`, `resize`, `resize_reduce`, `reduce`, `shrink_box` |
+| Properties | `width`, `height`, `size`, `bands` |
+| Drawing | `draw_rect`, `draw_line`, `draw_circle`, `draw_flood`, … (in-place) |
+| Stitching | `merge`, `mosaic`, `match_`, `globalbalance`, `remosaic` |
+| Interpolation | `VipsInterpolate` nearest / bilinear / custom |
 
-The API surface is evolving; see the docs for details and more examples.
+## Performance tips
+
+- Prefer `write_to_file` over `write_to_memory` when the destination is a path (avoids a full in-memory copy).
+- For large downscales (factor ≳ 3 on multi-megapixel sources), prefer `resize_reduce` — it box-pre-shrinks before the final kernel.
+- Tune `vips::set_concurrency`, `set_max_operations`, and `set_max_mem_bytes` for your workload.
+- libvips pipelines are lazy: operations enqueue work until the image is written or materialized.
 
 ## Notes
 
@@ -111,6 +120,13 @@ vips-sys = { version = "0.2.0", path = "../vips-sys" }
 
 Clone the repos side by side and Cargo will pick the local `../vips-sys` during development;
 published consumers still use the crates.io version.
+
+Docker-based check (no local libvips required):
+
+```bash
+docker run --rm -v "$PWD/..":/workspace -w /workspace/vips-rs rust:1.88-bookworm \
+  bash -c 'apt-get update -qq && apt-get install -y -qq pkg-config libvips-dev && cargo test'
+```
 
 ## License
 

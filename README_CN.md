@@ -14,12 +14,13 @@
 - 针对常用 `libvips` API 的安全封装
 - 基于 RAII 的初始化/关闭管理
 - 提供读取、变换、写入的常用便捷方法
+- 惰性流水线求值（libvips 按需计算）
 
 文档：https://houseme.github.io/vips-rs/vips/
 
 ## 环境要求
 
-- Rust >= 1.85.0
+- Rust >= 1.85.0（edition 2024）
 - 系统已安装 `libvips`
     - macOS：`brew install vips`
     - Linux：`apt-get install -y pkg-config libvips libvips-dev`（或使用对应发行版包名）
@@ -30,7 +31,7 @@
 
 ```toml
 [dependencies]
-vips = "*"
+vips = "0.1"
 ```
 
 ## 快速开始
@@ -60,18 +61,18 @@ fn main() -> Result<()> {
 
 ```rust
 let pixels = vec![0u8; 256 * 256 * 3]; // RGB
-let img = VipsImage::from_memory(pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR) ?;
-let thumb = img.thumbnail(200, 200, VipsSize::VIPS_SIZE_FORCE) ?;
-thumb.write_to_file("black_200x200.png") ?;
+let img = VipsImage::from_memory(pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR)?;
+let thumb = img.thumbnail(200, 200, VipsSize::VIPS_SIZE_FORCE)?;
+thumb.write_to_file("black_200x200.png")?;
 ```
 
 - 借用像素内存（需保证被借用的数据活得更久）：
 
 ```rust
 let pixels = vec![0u8; 256 * 256 * 3];
-let img = VipsImage::from_memory_reference(&pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR) ?; // 返回图像与 `pixels` 共享生命周期
-let thumb = img.thumbnail(200, 200, VipsSize::VIPS_SIZE_FORCE) ?;
-thumb.write_to_file("black_ref_200x200.png") ?;
+let img = VipsImage::from_memory_reference(&pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR)?;
+let thumb = img.thumbnail(200, 200, VipsSize::VIPS_SIZE_FORCE)?;
+thumb.write_to_file("black_ref_200x200.png")?;
 ```
 
 ## 生命周期与常见问题
@@ -82,13 +83,21 @@ thumb.write_to_file("black_ref_200x200.png") ?;
 
 ## 功能概览
 
-- 读写：文件、内存（像素/缓冲区）
-- 几何：缩略图、比例缩放、降采样、快速缩小
-- 绘制：线、圆、洪泛填充（原地修改）
-- 拼接：`merge`、`mosaic`、`match_`、`globalbalance`
-- 插值：最近邻、双线性、自定义
+| 类别 | API |
+|------|-----|
+| 读写 | `from_file`、`from_memory`、`from_memory_reference`、`from_buffer`、`write_to_file`、`write_to_memory`、`write_jpeg` |
+| 几何 | `thumbnail`、`resize`、`resize_reduce`、`reduce`、`shrink_box` |
+| 属性 | `width`、`height`、`size`、`bands` |
+| 绘制 | `draw_rect`、`draw_line`、`draw_circle`、`draw_flood` 等（原地修改） |
+| 拼接 | `merge`、`mosaic`、`match_`、`globalbalance`、`remosaic` |
+| 插值 | `VipsInterpolate` 最近邻 / 双线性 / 自定义 |
 
-更多示例与细节请参考在线文档与 `examples`。
+## 性能建议
+
+- 目标是文件路径时优先 `write_to_file`，避免 `write_to_memory` 的整图拷贝。
+- 大幅缩小（百万像素级、缩小倍数 ≳ 3）时优先 `resize_reduce`：先 box 预缩小再最终重采样。
+- 按业务负载调整 `vips::set_concurrency`、`set_max_operations`、`set_max_mem_bytes`。
+- libvips 流水线是惰性的：操作会入队，直到写出或物化时才真正计算。
 
 ## 说明
 
@@ -106,6 +115,13 @@ vips-sys = { version = "0.2.0", path = "../vips-sys" }
 ```
 
 将两个仓库并排克隆后，Cargo 开发时会优先使用本地 `../vips-sys`；发布后消费者仍走 crates.io 版本。
+
+无需本机安装 libvips 的 Docker 验证：
+
+```bash
+docker run --rm -v "$PWD/..":/workspace -w /workspace/vips-rs rust:1.88-bookworm \
+  bash -c 'apt-get update -qq && apt-get install -y -qq pkg-config libvips-dev && cargo test'
+```
 
 ## 许可证
 
