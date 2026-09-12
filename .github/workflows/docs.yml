@@ -1,26 +1,51 @@
 name: Docs
+
 on:
   push:
     branches:
-      - master
       - main
+
+defaults:
+  run:
+    working-directory: vips-rs
 
 jobs:
   docs:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
     steps:
-      - name: Checkout sources
+      - name: Checkout vips-rs
         uses: actions/checkout@v7
         with:
-          submodules: 'recursive'
+          path: vips-rs
 
-      - name: Install build dependencies
+      - name: Checkout vips-sys (sibling path dep)
+        uses: actions/checkout@v7
+        with:
+          repository: houseme/vips-sys
+          path: vips-sys
+
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
-          sudo apt update
-          sudo apt install -y cmake libclang-dev pkg-config libvips-dev
+          sudo apt-get update
+          sudo apt-get install -y cmake libclang-dev pkg-config libvips-dev
+
+      - name: Install build dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install vips pkg-config
+          echo "PKG_CONFIG_PATH=$(brew --prefix vips)/lib/pkgconfig:$(brew --prefix)/lib/pkgconfig" >> "$GITHUB_ENV"
 
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
 
       - name: Run cargo doc
+        env:
+          RUSTDOCFLAGS: -D warnings
         run: cargo doc --no-deps --all-features
