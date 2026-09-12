@@ -3,6 +3,7 @@ name = "vips"
 version = "0.1.0"
 authors = ["elbaro <elbaro@github>", "houseme <housemecn@gmail.com>"]
 edition = "2024"
+resolver = "3"
 description = "Rust bindings for libvips: fast, low-memory image processing with a safe, ergonomic API."
 keywords = ["vips", "image", "libvips"]
 documentation = "https://houseme.github.io/vips-rs/vips/"
@@ -13,7 +14,7 @@ license = "MIT"
 
 # Local development uses the sibling crate; crates.io consumers resolve `version`.
 [dependencies]
-vips-sys = { version = "0.2.0", path = "../vips-sys" }
+vips-sys = { version = "0.2.0" }
 
 [dev-dependencies]
 compiletest_rs = "0.11.2"

@@ -411,6 +411,8 @@ dependencies = [
 [[package]]
 name = "vips-sys"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b8bb8aaa10190bf16805d3f38be992663904db2cf4731d677dff1b4bacbba35"
 dependencies = [
  "pkg-config",
  "vcpkg",
