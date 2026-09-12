@@ -12,12 +12,13 @@ readme = "README.md"
 categories = ["multimedia::images"]
 license = "MIT"
 
-# Local development uses the sibling crate; crates.io consumers resolve `version`.
+# Published builds resolve vips-sys from crates.io. Use [patch.crates-io]
+# with a sibling path when developing against a local vips-sys checkout.
 [dependencies]
 vips-sys = { version = "0.2.0" }
 
 [dev-dependencies]
-compiletest_rs = "0.11.2"
+trybuild = "1.0"
 
 [package.metadata.docs.rs]
 all-features = true

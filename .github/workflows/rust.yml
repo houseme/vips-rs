@@ -96,6 +96,10 @@ jobs:
     name: RustFmt
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Do not inherit workspace working-directory — checkout is at the repo root.
+    defaults:
+      run:
+        working-directory: .
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable

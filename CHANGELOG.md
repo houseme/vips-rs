@@ -44,7 +44,8 @@ Edition 2024 (Rust ≥ 1.85).
 - `VipsImage::Drop` / `image_postclose` null-pointer guards.
 - Serialize first-time `init` under a process lock so concurrent `vips_init` cannot SIGSEGV.
 - Serialize unit tests that touch libvips global state.
-- `lifetime_test`: clippy `collapsible_if` and Windows `lib` prefix when locating rlibs.
+- CI `RustFmt` job no longer inherits the nested `working-directory` (root checkout).
+- Lifetime UI tests use `trybuild` instead of `compiletest_rs` (fixes E0463 / missing E0597 on CI).
 
 ## [0.1.0-alpha.3]
 
