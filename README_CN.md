@@ -96,6 +96,17 @@ thumb.write_to_file("black_ref_200x200.png") ?;
 - 副作用：大多数操作返回新图像；`draw*` 系列会原地修改 `self`。
 - 若缺少更高层封装，可使用底层 `vips-sys` 或 `vips::call(...)` 直接调用 libvips 操作。
 
+## 本地开发
+
+本 crate 同时支持 crates.io 与本地 sibling 源码引用：
+
+```toml
+[dependencies]
+vips-sys = { version = "0.2.0", path = "../vips-sys" }
+```
+
+将两个仓库并排克隆后，Cargo 开发时会优先使用本地 `../vips-sys`；发布后消费者仍走 crates.io 版本。
+
 ## 许可证
 
 [MIT](LICENSE)

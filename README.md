@@ -100,6 +100,18 @@ The API surface is evolving; see the docs for details and more examples.
 - If a higher-level wrapper is missing, you can still access lower-level bindings in `vips-sys` or use `vips::call(...)`
   to invoke libvips operations directly.
 
+## Local development
+
+This crate resolves `vips-sys` both from crates.io and from a local sibling checkout:
+
+```toml
+[dependencies]
+vips-sys = { version = "0.2.0", path = "../vips-sys" }
+```
+
+Clone the repos side by side and Cargo will pick the local `../vips-sys` during development;
+published consumers still use the crates.io version.
+
 ## License
 
 [MIT](LICENSE)
