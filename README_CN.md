@@ -107,14 +107,12 @@ thumb.write_to_file("black_ref_200x200.png")?;
 
 ## 本地开发
 
-本 crate 同时支持 crates.io 与本地 sibling 源码引用：
+正式构建从 crates.io 解析 `vips-sys`。若要改用本地 sibling 源码，在**工作区/消费方根目录**（或临时在本 crate）增加：
 
 ```toml
-[dependencies]
-vips-sys = { version = "0.2.0", path = "../vips-sys" }
+[patch.crates-io]
+vips-sys = { path = "../vips-sys" }
 ```
-
-将两个仓库并排克隆后，Cargo 开发时会优先使用本地 `../vips-sys`；发布后消费者仍走 crates.io 版本。
 
 无需本机安装 libvips 的 Docker 验证：
 

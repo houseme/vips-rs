@@ -111,15 +111,13 @@ thumb.write_to_file("black_ref_200x200.png")?;
 
 ## Local development
 
-This crate resolves `vips-sys` both from crates.io and from a local sibling checkout:
+Published builds resolve `vips-sys` from crates.io. To develop against a sibling checkout, add a
+`[patch]` at the **workspace/consumer root** (or temporarily in this crate):
 
 ```toml
-[dependencies]
-vips-sys = { version = "0.2.0", path = "../vips-sys" }
+[patch.crates-io]
+vips-sys = { path = "../vips-sys" }
 ```
-
-Clone the repos side by side and Cargo will pick the local `../vips-sys` during development;
-published consumers still use the crates.io version.
 
 Docker-based check (no local libvips required):
 
