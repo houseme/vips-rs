@@ -84,8 +84,11 @@ thumb.write_to_file("black_ref_200x200.png")?;
 
 | 类别 | API |
 |------|-----|
-| 读写 | `from_file`、`from_memory`、`from_memory_reference`、`from_buffer`、`write_to_file`、`write_to_memory`、`write_jpeg` |
-| 几何 | `thumbnail`、`resize`、`resize_reduce`、`reduce`、`shrink_box` |
+| 读写 | `from_file`、`from_memory`、`from_memory_reference`、`from_buffer`、`write_to_file`、`write_to_memory`、`write_to_buffer`、`write_jpeg`、`find_load`/`find_save` |
+| 几何 | `thumbnail`、`resize`、`resize_reduce`、`reduce`、`shrink_box`、`crop`、`embed`、`flip`/`rot`/`rotate`/`autorot`、`zoom`、`insert`、`gravity`、`extract_band`、`bandjoin2`/`bandjoin_const`、`copy`/`copy_memory` |
+| 算术 | `add`/`subtract`/`multiply`/`divide`、`linear`/`linear1`、`invert`、`cast`、`colourspace` |
+| 滤波 | `gaussblur`、`sharpen` |
+| 统计 | `avg`、`min_value`、`max_value`、`getpoint` |
 | 属性 | `width`、`height`、`size`、`bands` |
 | 绘制 | `draw_rect`、`draw_line`、`draw_circle`、`draw_flood` 等（原地修改） |
 | 拼接 | `merge`、`mosaic`、`match_`、`globalbalance`、`remosaic` |

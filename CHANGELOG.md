@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Geometry helpers aligned with common php-vips methods: `crop`/`extract_area`, `embed`, `gravity`, `insert`, `flip`/`fliphor`/`flipver`, `rot`/`rot90`/`rot180`/`rot270`, `rotate`, `autorot`, `zoom`, `extract_band`, `bandjoin2`, `bandjoin_const`, `copy`, `copy_memory`.
+- Arithmetic/color/filter: `add`/`subtract`/`multiply`/`divide`, `linear`/`linear1`, `invert`, `cast`, `colourspace`, `gaussblur`, `sharpen`.
+- Statistics: `avg`, `min_value`, `max_value`, `getpoint`.
+- IO: `write_to_buffer(suffix)`; free functions `find_load` / `find_save`.
+- `examples/phpvips_align` smoke coverage for the new APIs.
+
 ### Changed
 
 - Point `package.documentation` and README docs links at <https://docs.rs/vips/> (drop GitHub Pages URLs).
