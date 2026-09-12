@@ -98,10 +98,17 @@ pub fn set_trace(trace: bool) {
 mod tests {
     use super::*;
     use crate::init;
+    use std::sync::Mutex;
+
+    /// libvips global state is process-wide; serialize tests that touch it.
+    fn vips_test_lock() -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: Mutex<()> = Mutex::new(());
+        LOCK.lock().unwrap_or_else(|e| e.into_inner())
+    }
 
     #[test]
     fn version_works() {
-        // Version queries do not require mandatory init
+        let _guard = vips_test_lock();
         let v = crate::version::version();
         assert!(v.0 >= 8);
         assert!(crate::version::version_string().contains("8."));
@@ -109,6 +116,7 @@ mod tests {
 
     #[test]
     fn init_is_idempotent() {
+        let _guard = vips_test_lock();
         init::init(Some("test-app")).unwrap();
         init::init(Some("test-app")).unwrap();
         assert!(init::is_initialized());
@@ -116,8 +124,8 @@ mod tests {
 
     #[test]
     fn cache_controls() {
-        // No enforcement init: These interfaces do not rely on explicit initialization in most cases, but are safe to do with init
-        let _ = init::init(Some("cache-test"));
+        let _guard = vips_test_lock();
+        init::init(Some("cache-test")).unwrap();
         set_max_operations(256);
         set_max_mem_bytes(64 * 1024 * 1024);
         set_max_files(64);

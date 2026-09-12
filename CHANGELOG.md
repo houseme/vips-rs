@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- Serialize first-time `init` under a process lock so concurrent `vips_init` cannot SIGSEGV.
+- Serialize unit tests that touch libvips global state.
+- `lifetime_test`: clippy `collapsible_if` and Windows `lib` prefix when locating rlibs.
+
 ## [0.1.0] - 2026-09-13
 
 First stable crates.io release. Depends on `vips-sys` 0.2.0.
