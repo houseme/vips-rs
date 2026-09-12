@@ -9,10 +9,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-### Added
-
-- `Release` workflow supports manual `workflow_dispatch` with a `tag` input (in addition to tag push).
-
 ## [0.1.0] - 2026-09-13
 
 First stable crates.io release. Resolves `vips-sys` 0.2.0 from crates.io.
@@ -21,6 +17,7 @@ Edition 2024 (Rust ≥ 1.85).
 ### Added
 
 - Tag-driven `Release` workflow: version/CHANGELOG gates, quality checks, crates.io publish, GitHub Release notes.
+- `Release` workflow also supports manual `workflow_dispatch` with a `tag` input.
 - CI/Release verify on Linux, macOS, and Windows (Windows typecheck/clippy without link tests).
 - `VipsImage::resize_reduce` — box pre-shrink (`vips_shrink`) + resize for large sources.
 - `VipsImage::shrink_box` — integer box shrink pre-pass.
