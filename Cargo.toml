@@ -2,7 +2,7 @@
 name = "vips"
 version = "0.1.0-alpha.5"
 authors = ["elbaro <elbaro@github>", "houseme <housemecn@gmail.com>"]
-edition = "2021"
+edition = "2024"
 description = "Rust bindings for libvips: fast, low-memory image processing with a safe, ergonomic API."
 keywords = ["vips", "image", "libvips"]
 documentation = "https://houseme.github.io/vips-rs/vips/"
@@ -10,7 +10,7 @@ repository = "https://github.com/houseme/vips-rs"
 readme = "README.md"
 categories = ["multimedia::images"]
 license = "MIT"
-rust-version = "1.80.0"
+rust-version = "1.85"
 
 [dependencies]
 vips-sys = { version = "0.1.3-beta.2" }

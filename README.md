@@ -19,7 +19,7 @@ Documentation: https://houseme.github.io/vips-rs/vips/
 
 ## Requirements
 
-- Rust >= 1.80.0
+- Rust >= 1.85.0
 - libvips installed on your system
     - macOS: `brew install vips`
     - Linux: `apt-get install -y pkg-config libvips libvips-dev` (or your distro equivalent)

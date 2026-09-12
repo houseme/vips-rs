@@ -19,7 +19,7 @@
 
 ## 环境要求
 
-- Rust >= 1.80.0
+- Rust >= 1.85.0
 - 系统已安装 `libvips`
     - macOS：`brew install vips`
     - Linux：`apt-get install -y pkg-config libvips libvips-dev`（或使用对应发行版包名）
