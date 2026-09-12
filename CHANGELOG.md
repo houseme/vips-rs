@@ -45,7 +45,7 @@ Edition 2024 (Rust ≥ 1.85).
 - Serialize first-time `init` under a process lock so concurrent `vips_init` cannot SIGSEGV.
 - Serialize unit tests that touch libvips global state.
 - CI `RustFmt` job no longer inherits the nested `working-directory` (root checkout).
-- Lifetime UI tests use `trybuild` instead of `compiletest_rs` (fixes E0463 / missing E0597 on CI).
+- Lifetime UI tests use `trybuild` with rustc-1.98-formatted `.stderr` snapshots (avoids compiletest E0463 and version-skew mismatches).
 
 ## [0.1.0-alpha.3]
 

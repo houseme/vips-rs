@@ -1,7 +1,7 @@
 error[E0597]: `pixels` does not live long enough
   --> tests/compile-fail/lifetime2.rs:12:13
    |
-9  |     let _thumbnail: VipsImage = {
+ 9 |     let _thumbnail: VipsImage = {
    |         ---------- borrow later stored here
 10 |         let pixels = vec![0; 256 * 256 * 3];
    |             ------ binding `pixels` declared here

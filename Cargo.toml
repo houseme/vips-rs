@@ -8,7 +8,6 @@ description = "Rust bindings for libvips: fast, low-memory image processing with
 keywords = ["vips", "image", "libvips"]
 documentation = "https://houseme.github.io/vips-rs/vips/"
 repository = "https://github.com/houseme/vips-rs"
-readme = "README.md"
 categories = ["multimedia::images"]
 license = "MIT"
 

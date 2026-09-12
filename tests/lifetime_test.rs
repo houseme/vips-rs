@@ -1,7 +1,7 @@
-//! Lifetime compile tests via `trybuild` (replaces compiletest_rs).
+//! Lifetime UI tests via trybuild.
 //!
-//! `compile-fail/` cases must fail to borrow-check.
-//! `run-pass/` cases must compile.
+//! Regenerate `.stderr` snapshots when rustc diagnostic formatting changes:
+//! `TRYBUILD=overwrite cargo test --test lifetime_test`
 
 #[test]
 fn compile_fail() {

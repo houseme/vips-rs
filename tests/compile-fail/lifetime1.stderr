@@ -1,11 +1,11 @@
 error[E0597]: `pixels` does not live long enough
   --> tests/compile-fail/lifetime1.rs:9:42
    |
-7  |     let _img: VipsImage = {
+ 7 |     let _img: VipsImage = {
    |         ---- borrow later stored here
-8  |         let pixels = vec![0; 256 * 256 * 3];
+ 8 |         let pixels = vec![0; 256 * 256 * 3];
    |             ------ binding `pixels` declared here
-9  |         VipsImage::from_memory_reference(&pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR)
+ 9 |         VipsImage::from_memory_reference(&pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR)
    |                                          ^^^^^^^ borrowed value does not live long enough
 10 |             .unwrap()
 11 |     };
