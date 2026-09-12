@@ -794,14 +794,19 @@ impl<'a> VipsImage<'a> {
     // ─── PROPERTIES ─────────────────────────────────────────────────────────────────
     //
 
-    #[allow(dead_code)]
-    fn width(&self) -> u32 {
+    /// Image width in pixels.
+    pub fn width(&self) -> u32 {
         unsafe { (*self.c).Xsize as u32 }
     }
 
-    #[allow(dead_code)]
-    fn height(&self) -> u32 {
+    /// Image height in pixels.
+    pub fn height(&self) -> u32 {
         unsafe { (*self.c).Ysize as u32 }
+    }
+
+    /// Image dimensions as `(width, height)`.
+    pub fn size(&self) -> (u32, u32) {
+        (self.width(), self.height())
     }
 
     //
