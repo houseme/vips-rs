@@ -4,7 +4,6 @@
 
 [![Rust](https://github.com/houseme/vips-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/houseme/vips-rs/actions/workflows/rust.yml)
 [![Crates.io](https://img.shields.io/crates/v/vips.svg)](https://crates.io/crates/vips)
-[![Docs](https://img.shields.io/badge/docs-online-blue)](https://houseme.github.io/vips-rs/vips/)
 [![docs.rs](https://docs.rs/vips/badge.svg)](https://docs.rs/vips/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Downloads](https://img.shields.io/crates/d/vips)](https://crates.io/crates/vips)
@@ -16,7 +15,7 @@
 - 提供读取、变换、写入的常用便捷方法
 - 惰性流水线求值（libvips 按需计算）
 
-文档：https://houseme.github.io/vips-rs/vips/
+文档：https://docs.rs/vips/
 
 ## 环境要求
 
