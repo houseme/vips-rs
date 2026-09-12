@@ -11,18 +11,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Geometry helpers aligned with common php-vips methods: `crop`/`extract_area`, `embed`, `gravity`, `insert`, `flip`/`fliphor`/`flipver`, `rot`/`rot90`/`rot180`/`rot270`, `rotate`, `autorot`, `zoom`, `extract_band`, `bandjoin2`, `bandjoin_const`, `copy`, `copy_memory`.
+- Geometry helpers: `crop`/`extract_area`, `embed`, `gravity`, `insert`, `flip`/`fliphor`/`flipver`, `rot`/`rot90`/`rot180`/`rot270`, `rotate`, `autorot`, `zoom`, `extract_band`, `bandjoin2`, `bandjoin_const`, `copy`, `copy_memory`.
 - Arithmetic/color/filter: `add`/`subtract`/`multiply`/`divide`, `linear`/`linear1`, `invert`, `cast`, `colourspace`, `gaussblur`, `sharpen`.
 - Statistics: `avg`, `min_value`, `max_value`, `getpoint`.
 - IO: `write_to_buffer(suffix)`; free functions `find_load` / `find_save`.
-- Math convenience (`lua-vips` style): `sin`/`cos`/`tan`, `ln`/`log10`/`exp`/`exp10`, `floor`/`ceil`/`rint`, `abs`/`sign`/`clamp`, `pow_const`.
+- Math convenience helpers: `sin`/`cos`/`tan`, `ln`/`log10`/`exp`/`exp10`, `floor`/`ceil`/`rint`, `abs`/`sign`/`clamp`, `pow_const`.
 - Relational masks: `less`/`lesseq`/`more`/`moreeq`/`equal_const`/`notequal_const`.
 - Boolean/shift: `and_const`/`or_const`/`eor_const`, `lshift_const`/`rshift_const`, `bandbool`/`bandand`/`bandor`/`bando`, `bandmean`, `bandsplit`.
 - Filter/morph/edge: `conv`, `erode`/`dilate`, `median`/`rank`, `sobel`, `canny`.
 - Logic/geometry extras: `ifthenelse`, `smartcrop`, `falsecolour`, `premultiply`/`unpremultiply`, `sequential`.
 - Stats: `deviate`, `percent`, `find_trim`.
 - Create: free functions `black`, `xyz`.
-- `examples/phpvips_align` smoke coverage for the new APIs.
+- Additional geometry: `wrap`, `replicate`, `grid`, `copy_file`.
+- Color/hist/edge: `gamma`, `hist_find`/`hist_local`/`hist_equal`/`hist_entropy`, `maplut`, `bandfold`/`bandunfold`, `labelregions`.
+- Create: `grey`, `sines`, `zone`, `perlin`, `gaussnoise`.
+- `examples/ops_smoke` smoke coverage for the new APIs.
 
 ### Changed
 

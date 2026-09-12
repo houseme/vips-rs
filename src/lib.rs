@@ -34,7 +34,9 @@ mod instance;
 pub use instance::VipsInstance;
 
 mod image;
-pub use image::{VipsImage, black, find_load, find_save, xyz};
+pub use image::{
+    VipsImage, black, find_load, find_save, gaussnoise, grey, perlin, sines, xyz, zone,
+};
 
 mod interpolate;
 pub use interpolate::{VipsInterpolate, VipsInterpolateMethod};

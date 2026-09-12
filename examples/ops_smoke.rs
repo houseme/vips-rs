@@ -1,8 +1,8 @@
-//! Smoke-check APIs aligned with common php-vips methods.
+//! Smoke-check the high-level `vips` operation wrappers.
 use vips::*;
 
 fn main() -> Result<()> {
-    let _instance = VipsInstance::new("phpvips_align", false)?;
+    let _instance = VipsInstance::new("ops_smoke", false)?;
 
     // Build a 64x64 RGB image.
     let pixels = vec![64u8; 64 * 64 * 3];
@@ -55,7 +55,7 @@ fn main() -> Result<()> {
     let loader = find_load("./examples/images/kodim01.png");
     assert!(loader.is_some());
 
-    // lua-vips / vipsgen style conveniences
+    // Convenience helpers
     let mask = cropped.less(200.0)?;
     assert_eq!(mask.size(), (32, 32));
     let selected = mask.bandand()?.ifthenelse(&cropped, &cropped.linear1(0.5, 0.0)?)?;
@@ -82,8 +82,20 @@ fn main() -> Result<()> {
     let d = cropped.deviate()?;
     assert!(d.is_finite());
 
+    // Additional geometry / hist / create
+    let tiled = cropped.replicate(2, 2)?;
+    assert_eq!(tiled.size(), (64, 64));
+    let wrapped = tiled.wrap()?;
+    assert_eq!(wrapped.size(), (64, 64));
+    let gamma = cropped.gamma(None)?;
+    assert_eq!(gamma.size(), (32, 32));
+    let hist = band.hist_find()?;
+    assert!(hist.bands() >= 1);
+    let grey_img = grey(8, 8)?;
+    assert_eq!(grey_img.size(), (8, 8));
+
     println!(
-        "aligned ops ok: crop={:?} avg={avg:.3} deviate={d:.3} loader={loader:?} jpg={} png={}",
+        "ops ok: crop={:?} avg={avg:.3} deviate={d:.3} loader={loader:?} jpg={} png={}",
         cropped.size(),
         jpg.len(),
         png.len()
