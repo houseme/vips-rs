@@ -58,7 +58,9 @@ fn main() -> Result<()> {
     // Convenience helpers
     let mask = cropped.less(200.0)?;
     assert_eq!(mask.size(), (32, 32));
-    let selected = mask.bandand()?.ifthenelse(&cropped, &cropped.linear1(0.5, 0.0)?)?;
+    let selected = mask
+        .bandand()?
+        .ifthenelse(&cropped, &cropped.linear1(0.5, 0.0)?)?;
     assert_eq!(selected.size(), (32, 32));
 
     let floored = cropped.floor()?.ceil()?.rint()?;

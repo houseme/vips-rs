@@ -2166,9 +2166,8 @@ impl<'a> VipsImage<'a> {
     pub fn wrap(&self) -> Result<VipsImage<'a>> {
         let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
         // SAFETY: live image.
-        let ret = unsafe {
-            vips_sys::vips_wrap(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
-        };
+        let ret =
+            unsafe { vips_sys::vips_wrap(self.c.as_ptr(), &mut out_ptr, null() as *const c_char) };
         result_with_ret(out_ptr, ret)
     }
 
@@ -2210,11 +2209,7 @@ impl<'a> VipsImage<'a> {
         let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
         // SAFETY: live image.
         let ret = unsafe {
-            vips_sys::vips_copy_file(
-                self.c.as_ptr(),
-                &mut out_ptr,
-                null() as *const c_char,
-            )
+            vips_sys::vips_copy_file(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
         };
         result_with_ret(out_ptr, ret)
     }
@@ -2236,11 +2231,9 @@ impl<'a> VipsImage<'a> {
                     e,
                     null() as *const c_char,
                 ),
-                None => vips_sys::vips_gamma(
-                    self.c.as_ptr(),
-                    &mut out_ptr,
-                    null() as *const c_char,
-                ),
+                None => {
+                    vips_sys::vips_gamma(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
+                }
             }
         };
         result_with_ret(out_ptr, ret)
@@ -2287,11 +2280,7 @@ impl<'a> VipsImage<'a> {
         let mut out: f64 = 0.0;
         // SAFETY: live image.
         let ret = unsafe {
-            vips_sys::vips_hist_entropy(
-                self.c.as_ptr(),
-                &mut out,
-                null() as *const c_char,
-            )
+            vips_sys::vips_hist_entropy(self.c.as_ptr(), &mut out, null() as *const c_char)
         };
         ffi::ret_to_result(ret)?;
         Ok(out)
@@ -2337,11 +2326,7 @@ impl<'a> VipsImage<'a> {
         let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
         // SAFETY: live image; mask out-param is the labelled image.
         let ret = unsafe {
-            vips_sys::vips_labelregions(
-                self.c.as_ptr(),
-                &mut out_ptr,
-                null() as *const c_char,
-            )
+            vips_sys::vips_labelregions(self.c.as_ptr(), &mut out_ptr, null() as *const c_char)
         };
         result_with_ret(out_ptr, ret)
     }
