@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- `Release` workflow supports manual `workflow_dispatch` with a `tag` input (in addition to tag push).
+
 ## [0.1.0] - 2026-09-13
 
 First stable crates.io release. Resolves `vips-sys` 0.2.0 from crates.io.

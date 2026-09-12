@@ -1,13 +1,13 @@
-# Publish `vips` to crates.io and create a GitHub Release when a version tag is pushed.
+# Publish `vips` to crates.io and create a GitHub Release.
+#
+# Triggers:
+#   - push of a version tag (vX.Y.Z or vX.Y.Z-pre)
+#   - manual `workflow_dispatch` with a `tag` input (e.g. v0.1.0)
 #
 # Required repository secret:
 #   CRATES_IO_TOKEN — crates.io API token with publish rights for crate `vips`
 #
-# Tag format: vX.Y.Z or vX.Y.Z-pre (must match Cargo.toml version without the leading `v`)
-# Release order: publish vips-sys first, then tag this repo.
-#
-# Verify runs on Linux / macOS / Windows. Publish uses the crates.io-resolved
-# vips-sys (path dep is stripped by cargo package).
+# Release order: publish vips-sys first, then this repo.
 
 name: Release
 
@@ -15,19 +15,27 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.1.0); must match Cargo.toml version"
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 env:
   CARGO_TERM_COLOR: always
+  # Tag push → ref name; manual run → workflow input.
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 defaults:
   run:
     working-directory: vips-rs
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -66,11 +74,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tag="${GITHUB_REF_NAME#v}"
+          tag="${RELEASE_TAG#v}"
           crate="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
           echo "tag=${tag} crate=${crate}"
           if [ "${tag}" != "${crate}" ]; then
-            echo "::error::Git tag v${tag} does not match Cargo.toml version ${crate}"
+            echo "::error::Release tag v${tag} does not match Cargo.toml version ${crate}"
             exit 1
           fi
 
@@ -79,9 +87,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ver="${GITHUB_REF_NAME#v}"
+          ver="${RELEASE_TAG#v}"
           if ! grep -qE "^## \[${ver}\]" CHANGELOG.md; then
-            echo "::error::CHANGELOG.md has no '## [${ver}]' section. Move Unreleased notes before tagging."
+            echo "::error::CHANGELOG.md has no '## [${ver}]' section. Move Unreleased notes before releasing."
             exit 1
           fi
           if grep -qE '^## \[Unreleased\]' CHANGELOG.md; then
@@ -91,7 +99,7 @@ jobs:
               grab {print}
             ' CHANGELOG.md | sed '/^[[:space:]]*$/d' | sed '/^### /d')"
             if [ -n "${body}" ]; then
-              echo "::error::CHANGELOG.md [Unreleased] still has notes. Fold them into [${ver}] before tagging."
+              echo "::error::CHANGELOG.md [Unreleased] still has notes. Fold them into [${ver}] before releasing."
               exit 1
             fi
           fi
@@ -169,7 +177,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ver="${GITHUB_REF_NAME#v}"
+          ver="${RELEASE_TAG#v}"
           awk -v ver="$ver" '
             $0 ~ "^## \\[" ver "\\]" {grab=1; next}
             grab && /^## \[/ {exit}
@@ -184,8 +192,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          name: ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
           body_path: vips-rs/release-notes.md
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ contains(env.RELEASE_TAG, '-') }}
           generate_release_notes: false
