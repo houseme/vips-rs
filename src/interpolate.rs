@@ -1,4 +1,4 @@
-use crate::{take_vips_error, Error, Result, VipsRegion};
+use crate::{Error, Result, VipsRegion, take_vips_error};
 use std::ffi::CString;
 use std::os::raw::c_void;
 

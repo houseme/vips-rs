@@ -40,8 +40,6 @@ pub fn version_string() -> &'static str {
         if ptr.is_null() {
             return "unknown";
         }
-        std::ffi::CStr::from_ptr(ptr)
-            .to_str()
-            .unwrap_or("unknown")
+        std::ffi::CStr::from_ptr(ptr).to_str().unwrap_or("unknown")
     })
 }

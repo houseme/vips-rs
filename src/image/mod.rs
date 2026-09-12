@@ -1,4 +1,4 @@
-use crate::{take_vips_error, Error, Result, VipsInterpolate};
+use crate::{Error, Result, VipsInterpolate, take_vips_error};
 use std::ffi::CString;
 use std::marker::PhantomData;
 use std::os::raw::{c_char, c_int, c_void};
@@ -222,9 +222,9 @@ impl<'a> VipsImage<'a> {
         };
 
         if c.is_null() {
-            return Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
-                "Unknown error from libvips".to_string()
-            })));
+            return Err(Error::Vips(
+                take_vips_error().unwrap_or_else(|| "Unknown error from libvips".to_string()),
+            ));
         }
 
         let bb: Box<Box<[u8]>> = Box::new(b);
@@ -1073,9 +1073,9 @@ impl<'a> VipsImage<'a> {
             let ptr = vips_sys::vips_image_write_to_memory(self.c, &mut result_size as *mut usize)
                 as *mut u8;
             if ptr.is_null() {
-                return Err(Error::Vips(take_vips_error().unwrap_or_else(|| {
-                    "Unknown error from libvips".to_string()
-                })));
+                return Err(Error::Vips(
+                    take_vips_error().unwrap_or_else(|| "Unknown error from libvips".to_string()),
+                ));
             }
             let slice = std::slice::from_raw_parts(ptr as *const u8, result_size);
             let vec = slice.to_vec();

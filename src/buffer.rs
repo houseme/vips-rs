@@ -1,4 +1,4 @@
-use crate::{take_vips_error, Error, Result, VipsImage};
+use crate::{Error, Result, VipsImage, take_vips_error};
 use std::os::raw::{c_char, c_int, c_void};
 use std::ptr::null_mut;
 
