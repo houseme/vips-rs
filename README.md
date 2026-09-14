@@ -42,11 +42,8 @@ fn main() -> Result<()> {
     // Initialize libvips once per process. The boolean usually controls auto-shutdown.
     let _instance = VipsInstance::new("app_example", true)?;
 
-    // Load an image from file
-    let img = VipsImage::from_file("./examples/images/kodim01.png")?;
-
-    // Create a thumbnail with forced width and height
-    let thumb = img.thumbnail(320, 240, VipsSize::VIPS_SIZE_FORCE)?;
+    // Create a thumbnail with forced width and height (preferred for files)
+    let thumb = VipsImage::thumbnail_file("./examples/images/kodim01.png", 320, 240, VipsSize::VIPS_SIZE_FORCE)?;
 
     // Save the result
     thumb.write_to_file("kodim01_320x240.jpg")?;
@@ -87,7 +84,7 @@ thumb.write_to_file("black_ref_200x200.png")?;
 | Area | APIs |
 |------|------|
 | IO | `from_file`, `from_memory`, `from_memory_reference`, `from_buffer`, `write_to_file`, `write_to_memory`, `write_to_buffer`, `write_jpeg`, `find_load`/`find_save`, `black`/`xyz`/`grey`/`sines`/`zone`/`perlin`/`gaussnoise` |
-| Geometry | `thumbnail`, `resize`, `resize_reduce`, `reduce`, `shrink_box`, `crop`, `embed`, `flip`/`rot`/`rotate`/`autorot`, `zoom`, `insert`, `gravity`, `extract_band`, `bandjoin2`/`bandjoin_const`, `copy`/`copy_memory`, `smartcrop`, `ifthenelse` |
+| Geometry | `thumbnail_file`, `thumbnail_buffer`, `thumbnail` (in-memory), `resize`, `resize_reduce`, `reduce`, `shrink_box`, `crop`, `embed`, `flip`/`rot`/`rotate`/`autorot`, `zoom`, `insert`, `gravity`, `extract_band`, `bandjoin2`/`bandjoin_const`, `copy`/`copy_memory`, `smartcrop`, `ifthenelse` |
 | Arithmetic | `add`/`subtract`/`multiply`/`divide`, `linear`/`linear1`, `invert`, `pow_const`, `abs`/`sign`/`clamp`, `floor`/`ceil`/`rint` |
 | Math | `sin`/`cos`/`tan`, `ln`/`log10`/`exp`/`exp10` |
 | Relational | `less`/`lesseq`/`more`/`moreeq`/`equal_const`/`notequal_const`, boolean/shift const, `bandand`/`bandor`/`bando` |
@@ -102,6 +99,7 @@ thumb.write_to_file("black_ref_200x200.png")?;
 
 ## Performance tips
 
+- Prefer `VipsImage::thumbnail_file` / `VipsImage::thumbnail_buffer` over `from_file`/`from_buffer` + `thumbnail` for downscales. They call `vips_thumbnail` / `vips_thumbnail_buffer`, which combine load and resize so libvips can shrink-on-load (often ~3× faster and several times lower peak memory than `thumbnail_image`). Use the instance method `thumbnail` only for already-decoded raw pixels.
 - Prefer `write_to_file` over `write_to_memory` when the destination is a path (avoids a full in-memory copy).
 - For large downscales (factor ≳ 3 on multi-megapixel sources), prefer `resize_reduce` — it box-pre-shrinks before the final kernel.
 - Tune `vips::set_concurrency`, `set_max_operations`, and `set_max_mem_bytes` for your workload.

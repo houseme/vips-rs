@@ -42,11 +42,8 @@ fn main() -> Result<()> {
     // 初始化 libvips（进程内仅需一次，通常布尔值用于控制自动关闭）
     let _instance = VipsInstance::new("app_example", true)?;
 
-    // 从文件读取图片
-    let img = VipsImage::from_file("./examples/images/kodim01.png")?;
-
-    // 生成缩略图（强制宽高）
-    let thumb = img.thumbnail(320, 240, VipsSize::VIPS_SIZE_FORCE)?;
+    // 生成缩略图（文件来源优先走 vips_thumbnail，可 shrink-on-load）
+    let thumb = VipsImage::thumbnail_file("./examples/images/kodim01.png", 320, 240, VipsSize::VIPS_SIZE_FORCE)?;
 
     // 写入文件
     thumb.write_to_file("kodim01_320x240.jpg")?;
@@ -85,7 +82,7 @@ thumb.write_to_file("black_ref_200x200.png")?;
 | 类别 | API |
 |------|-----|
 | 读写 | `from_file`、`from_memory`、`from_memory_reference`、`from_buffer`、`write_to_file`、`write_to_memory`、`write_to_buffer`、`write_jpeg`、`find_load`/`find_save`、`black`/`xyz`/`grey`/`sines`/`zone`/`perlin`/`gaussnoise` |
-| 几何 | `thumbnail`、`resize`、`resize_reduce`、`reduce`、`shrink_box`、`crop`、`embed`、`flip`/`rot`/`rotate`/`autorot`、`zoom`、`insert`、`gravity`、`extract_band`、`bandjoin2`/`bandjoin_const`、`copy`/`copy_memory`、`smartcrop`、`ifthenelse` |
+| 几何 | `thumbnail_file`、`thumbnail_buffer`、`thumbnail`（已解码像素）、`resize`、`resize_reduce`、`reduce`、`shrink_box`、`crop`、`embed`、`flip`/`rot`/`rotate`/`autorot`、`zoom`、`insert`、`gravity`、`extract_band`、`bandjoin2`/`bandjoin_const`、`copy`/`copy_memory`、`smartcrop`、`ifthenelse` |
 | 算术 | `add`/`subtract`/`multiply`/`divide`、`linear`/`linear1`、`invert`、`pow_const`、`abs`/`sign`/`clamp`、`floor`/`ceil`/`rint` |
 | 数学 | `sin`/`cos`/`tan`、`ln`/`log10`/`exp`/`exp10` |
 | 关系/位运算 | `less`/`lesseq`/`more`/`moreeq`/`equal_const`/`notequal_const`、布尔/移位常量、`bandand`/`bandor`/`bando` |
@@ -100,6 +97,7 @@ thumb.write_to_file("black_ref_200x200.png")?;
 
 ## 性能建议
 
+- 缩略图优先使用 `VipsImage::thumbnail_file` / `VipsImage::thumbnail_buffer`，不要先 `from_file`/`from_buffer` 再 `thumbnail`。前者调用 `vips_thumbnail` / `vips_thumbnail_buffer`，会把加载与缩放合并，libvips 可做 shrink-on-load（通常比 `thumbnail_image` 快数倍、峰值内存更低）。实例方法 `thumbnail` 仅用于已解码的原始像素。
 - 目标是文件路径时优先 `write_to_file`，避免 `write_to_memory` 的整图拷贝。
 - 大幅缩小（百万像素级、缩小倍数 ≳ 3）时优先 `resize_reduce`：先 box 预缩小再最终重采样。
 - 按业务负载调整 `vips::set_concurrency`、`set_max_operations`、`set_max_mem_bytes`。

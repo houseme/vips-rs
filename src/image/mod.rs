@@ -44,8 +44,7 @@ fn path_to_cstring(path: &Path) -> Result<CString> {
 ///
 /// fn main() -> Result<()> {
 ///     let _instance = VipsInstance::new("app_test", true)?;
-///     let img = VipsImage::from_file("input.jpg")?;
-///     let thumb = img.thumbnail(100, 100, VipsSize::VIPS_SIZE_BOTH)?;
+///     let thumb = VipsImage::thumbnail_file("input.jpg", 100, 100, VipsSize::VIPS_SIZE_BOTH)?;
 ///     thumb.write_to_file("thumb.jpg")?;
 ///     Ok(())
 /// }
@@ -859,15 +858,18 @@ impl<'a> VipsImage<'a> {
     // ─── RESIZE ─────────────────────────────────────────────────────────────────────
     //
 
-    /// Create a thumbnail of the image.
+    /// Create a thumbnail from already-decoded pixels (`vips_thumbnail_image`).
+    ///
+    /// Use this only when the source is already a live image (e.g. from
+    /// [`Self::from_memory`]). For files prefer [`Self::thumbnail_file`], and
+    /// for encoded buffers prefer [`Self::thumbnail_buffer`]: those combine
+    /// load + resize so libvips can shrink-on-load (faster, lower peak memory,
+    /// better quality). See the [libvips developer checklist](https://www.libvips.org/API/current/developer-checklist.html#performance).
     ///
     /// # Arguments
     /// * `width` - The desired width of the thumbnail.
     /// * `height` - The desired height of the thumbnail.
     /// * `size` - The size mode for the thumbnail (e.g., `VIPS_SIZE_BOTH`, `VIPS_SIZE_UP`, etc.).
-    ///
-    /// # Returns
-    /// A `Result` containing the thumbnail `VipsImage` or an error.
     ///
     /// # Errors
     /// Returns an error if the thumbnail creation fails.
@@ -878,7 +880,8 @@ impl<'a> VipsImage<'a> {
     ///
     /// fn main() -> Result<()> {
     ///     let _instance = VipsInstance::new("app_test", true)?;
-    ///     let img = VipsImage::from_file("input.jpg")?;
+    ///     let pixels = vec![0u8; 256 * 256 * 3];
+    ///     let img = VipsImage::from_memory(pixels, 256, 256, 3, VipsBandFormat::VIPS_FORMAT_UCHAR)?;
     ///     let thumb = img.thumbnail(100, 100, VipsSize::VIPS_SIZE_BOTH)?;
     ///     thumb.write_to_file("thumb.jpg")?;
     ///     Ok(())
@@ -893,6 +896,110 @@ impl<'a> VipsImage<'a> {
                 width as i32,
                 c"height".as_ptr(),
                 height as i32,
+                c"size".as_ptr(),
+                size,
+                null() as *const c_char,
+            )
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Create a thumbnail directly from a file path (`vips_thumbnail`).
+    ///
+    /// Preferred for file sources: load and resize are combined so libvips can
+    /// use format shrink-on-load (JPEG/PNG/WebP/etc.). Typically several times
+    /// faster and far lower peak memory than `from_file` + [`Self::thumbnail`].
+    ///
+    /// # Arguments
+    /// * `path` - Path to the source image.
+    /// * `width` - Target thumbnail width.
+    /// * `height` - Target thumbnail height.
+    /// * `size` - Fit mode (`VIPS_SIZE_BOTH`, `VIPS_SIZE_DOWN`, `VIPS_SIZE_UP`, `VIPS_SIZE_FORCE`).
+    ///
+    /// # Errors
+    /// Returns an error if the file cannot be loaded or thumbnailing fails.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<()> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     let thumb = VipsImage::thumbnail_file("input.jpg", 256, 256, VipsSize::VIPS_SIZE_BOTH)?;
+    ///     thumb.write_to_file("thumb.jpg")?;
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn thumbnail_file(
+        path: impl AsRef<Path>,
+        width: u32,
+        height: u32,
+        size: VipsSize,
+    ) -> Result<VipsImage<'static>> {
+        let path = path_to_cstring(path.as_ref())?;
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: path is a valid C string; out is written by libvips on success.
+        let ret = unsafe {
+            vips_sys::vips_thumbnail(
+                path.as_ptr(),
+                &mut out_ptr,
+                width as c_int,
+                c"height".as_ptr(),
+                height as c_int,
+                c"size".as_ptr(),
+                size,
+                null() as *const c_char,
+            )
+        };
+        result_with_ret(out_ptr, ret)
+    }
+
+    /// Create a thumbnail from an encoded image buffer (`vips_thumbnail_buffer`).
+    ///
+    /// Preferred for in-memory file contents (JPEG/PNG/WebP/… bytes): combines
+    /// decode + resize so libvips can shrink-on-load. Prefer this over
+    /// `from_buffer` + [`Self::thumbnail`].
+    ///
+    /// The returned image may retain a lazy load pipeline that reads from
+    /// `buf`; keep the buffer alive until the thumbnail is fully consumed.
+    ///
+    /// # Arguments
+    /// * `buf` - Encoded image bytes.
+    /// * `width` - Target thumbnail width.
+    /// * `height` - Target thumbnail height.
+    /// * `size` - Fit mode.
+    ///
+    /// # Errors
+    /// Returns an error if the buffer is not a valid image or thumbnailing fails.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use vips::*;
+    ///
+    /// fn main() -> Result<()> {
+    ///     let _instance = VipsInstance::new("app_test", true)?;
+    ///     let bytes = std::fs::read("input.jpg")?;
+    ///     let thumb = VipsImage::thumbnail_buffer(&bytes, 256, 256, VipsSize::VIPS_SIZE_BOTH)?;
+    ///     thumb.write_to_file("thumb.jpg")?;
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn thumbnail_buffer(
+        buf: &'a [u8],
+        width: u32,
+        height: u32,
+        size: VipsSize,
+    ) -> Result<VipsImage<'a>> {
+        let mut out_ptr: *mut vips_sys::VipsImage = null_mut();
+        // SAFETY: buf comes from a valid Rust slice; out is written by libvips.
+        let ret = unsafe {
+            vips_sys::vips_thumbnail_buffer(
+                buf.as_ptr() as *mut c_void,
+                buf.len(),
+                &mut out_ptr,
+                width as c_int,
+                c"height".as_ptr(),
+                height as c_int,
                 c"size".as_ptr(),
                 size,
                 null() as *const c_char,

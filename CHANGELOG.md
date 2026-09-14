@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- `VipsImage::thumbnail_file` — `vips_thumbnail` constructor that combines load + resize (shrink-on-load). Preferred for file sources over `from_file` + `thumbnail`.
+- `VipsImage::thumbnail_buffer` — `vips_thumbnail_buffer` constructor for encoded image bytes. Preferred over `from_buffer` + `thumbnail`.
 - Geometry helpers: `crop`/`extract_area`, `embed`, `gravity`, `insert`, `flip`/`fliphor`/`flipver`, `rot`/`rot90`/`rot180`/`rot270`, `rotate`, `autorot`, `zoom`, `extract_band`, `bandjoin2`, `bandjoin_const`, `copy`, `copy_memory`.
 - Arithmetic/color/filter: `add`/`subtract`/`multiply`/`divide`, `linear`/`linear1`, `invert`, `cast`, `colourspace`, `gaussblur`, `sharpen`.
 - Statistics: `avg`, `min_value`, `max_value`, `getpoint`.
@@ -30,6 +32,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 - Point `package.documentation` and README docs links at <https://docs.rs/vips/> (drop GitHub Pages URLs).
+- Document that `VipsImage::thumbnail` (`vips_thumbnail_image`) is only for already-decoded pixels; file/buffer sources should use `thumbnail_file` / `thumbnail_buffer` (issue [#9](https://github.com/houseme/vips-rs/issues/9)).
+- `VipsBuffer::thumbnail` now takes an explicit `VipsSize` instead of hardcoding `VIPS_SIZE_FORCE`, is implemented on `[u8]` (so `&[u8]`/`Vec<u8>` work with correct lifetimes), and delegates to `VipsImage::thumbnail_buffer`.
 
 ## [0.1.0] - 2026-09-13
 

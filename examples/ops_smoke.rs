@@ -52,6 +52,19 @@ fn main() -> Result<()> {
     let png = cropped.write_to_buffer(".png")?;
     assert!(!png.is_empty());
 
+    let file_thumb = VipsImage::thumbnail_file(
+        "./examples/images/kodim01.png",
+        32,
+        32,
+        VipsSize::VIPS_SIZE_BOTH,
+    )?;
+    assert!(file_thumb.width() > 0 && file_thumb.width() <= 32);
+
+    let buf_thumb = VipsImage::thumbnail_buffer(&png, 16, 16, VipsSize::VIPS_SIZE_BOTH)?;
+    assert!(buf_thumb.width() > 0 && buf_thumb.width() <= 16);
+    let via_trait = png.as_slice().thumbnail(16, 16, VipsSize::VIPS_SIZE_BOTH)?;
+    assert_eq!(via_trait.size(), buf_thumb.size());
+
     let loader = find_load("./examples/images/kodim01.png");
     assert!(loader.is_some());
 
