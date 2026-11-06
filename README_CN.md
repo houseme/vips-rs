@@ -51,9 +51,20 @@ fn main() -> Result<()> {
 }
 ```
 
+## 0.3.0 开发版本
+
+`v8_19` feature 开放基于 **libvips 8.19.0-rc1** 验证的 API，包括 QOI 文件与
+缓冲区读写、CICP/scRGB 转换、亮度百分位、动画循环次数、借用 blob 元数据，
+以及指定关注点的裁剪和缩略图。该 feature 包含 `v8_18`，要求原生 libvips 8.19+。
+默认功能和 `v8_18` 同时在原生 8.18.7 上验证。
+
+本次 Git 版本锁定尚未发包的 `vips-sys` 0.4.0 commit，Cargo 自动拉取该修订。
+后续发包需先发布 `vips-sys`，再切回 registry 依赖。下方 0.2 示例对应已发布版本。
+验证记录、性能测量及 RC 的 QOI 缩略图限制见 [review](docs/review-2026-11-07.md)。
+
 ## 0.2.0 新增能力与迁移
 
-此版本依赖已正式发布的 `vips-sys` 0.3.0，无需检出同级仓库。
+0.2.0 版本依赖已正式发布的 `vips-sys` 0.3.0，无需检出同级仓库。
 
 - `write_to_memory_owned` / `write_to_buffer_owned` 返回 `VipsOwnedBuffer`，
   持有 GLib 内存并提供不可变字节切片，省去额外复制到 Rust `Vec` 的成本；原 Vec API 保留。
@@ -135,10 +146,10 @@ thumb.write_to_file("black_ref_200x200.png")?;
 
 ## 本地开发
 
-默认从 crates.io 解析 `vips-sys`。如需同时开发两个 crate，可在工作区或消费方根目录添加以下可选覆盖：
+当前开发版本解析已固定的 `vips-sys` Git 修订。如需同时开发两个 crate，可在工作区或消费方根目录添加以下覆盖。
 
 ```toml
-[patch.crates-io]
+[patch."https://github.com/houseme/vips-sys"]
 vips-sys = { path = "../vips-sys" }
 ```
 

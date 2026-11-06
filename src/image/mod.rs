@@ -13,6 +13,9 @@ use vips_sys::{
 #[cfg(feature = "v8_18")]
 mod v8_18;
 
+#[cfg(feature = "v8_19")]
+mod v8_19;
+
 /// Number of colour bands used by an interpretation (libvips 8.18+).
 #[cfg(feature = "v8_18")]
 pub fn interpretation_bands(interpretation: vips_sys::VipsInterpretation) -> i32 {

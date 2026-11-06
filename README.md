@@ -51,9 +51,23 @@ fn main() -> Result<()> {
 }
 ```
 
+## 0.3.0 development version
+
+Feature `v8_19` enables the APIs validated against **libvips 8.19.0-rc1**.
+It includes QOI file/buffer IO, CICP/scRGB conversion, luminance percentiles,
+animation loop counts, borrowed blob metadata, and point-of-interest crops and
+thumbnails. The feature includes `v8_18` and requires native libvips 8.19+.
+Default and `v8_18` builds are also tested with native 8.18.7.
+
+This Git version pins an unpublished `vips-sys` 0.4.0 commit. Cargo fetches that
+revision automatically. Publishing later requires publishing `vips-sys` first
+and switching the dependency to the registry. The 0.2 examples below describe
+the currently published package. See the [review](docs/review-2026-11-07.md)
+for validation, performance measurements and the RC's QOI thumbnail limitation.
+
 ## 0.2.0 additions and migration
 
-This version uses the published `vips-sys` 0.3.0 dependency;
+Version 0.2.0 uses the published `vips-sys` 0.3.0 dependency;
 no sibling checkout is required.
 
 - `write_to_memory_owned` / `write_to_buffer_owned` return `VipsOwnedBuffer`,
@@ -145,11 +159,11 @@ thumb.write_to_file("black_ref_200x200.png")?;
 
 ## Local development
 
-Builds resolve `vips-sys` from crates.io. To develop both crates together, add this
-optional override at the workspace/consumer root:
+This development version resolves the pinned `vips-sys` Git revision. To develop
+both crates together, add this override at the workspace or consumer root.
 
 ```toml
-[patch.crates-io]
+[patch."https://github.com/houseme/vips-sys"]
 vips-sys = { path = "../vips-sys" }
 ```
 

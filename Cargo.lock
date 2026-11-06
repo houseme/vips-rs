@@ -211,7 +211,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "vips"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "trybuild",
  "vips-sys",
@@ -219,9 +219,8 @@ dependencies = [
 
 [[package]]
 name = "vips-sys"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d381abf62f1a6d05fc9f24ca73be79d6a67cff8f9eae5638baae046130105e4"
+version = "0.4.0"
+source = "git+https://github.com/houseme/vips-sys?rev=366afa4d6d7c48d84edbbb86733428ff20b5c6a7#366afa4d6d7c48d84edbbb86733428ff20b5c6a7"
 dependencies = [
  "pkg-config",
  "vcpkg",

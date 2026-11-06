@@ -1,0 +1,40 @@
+name: libvips 8.19
+
+on:
+  push:
+    branches: ["main", "feature/**"]
+  pull_request:
+    branches: ["main", "feature/**"]
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: libvips/libvips
+          ref: 115df84b47247fb3d644de16bbb997f9edc4b5e3
+          path: upstream-libvips
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build pinned 8.19.0-rc1
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build pkg-config libclang-dev libglib2.0-dev libexpat1-dev libjpeg-dev libpng-dev
+          meson setup native-build upstream-libvips \
+            --prefix="$RUNNER_TEMP/vips" --libdir=lib --buildtype=release \
+            --wrap-mode=nofallback --auto-features=disabled \
+            -Dpng=enabled -Djpeg=enabled -Ddeprecated=true \
+            -Dcplusplus=false -Dexamples=false -Dtests=false -Dtools=false -Dman=false -Dpo=false
+          ninja -C native-build
+          meson install -C native-build --no-rebuild
+          echo "PKG_CONFIG_PATH=$RUNNER_TEMP/vips/lib/pkgconfig" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$RUNNER_TEMP/vips/lib" >> "$GITHUB_ENV"
+      - name: Verify 8.19 APIs
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: |
+          cargo test --locked --all-features
+          cargo clippy --locked --all-targets --all-features -- -D warnings
+          cargo doc --locked --no-deps --all-features

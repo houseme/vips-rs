@@ -1,0 +1,11 @@
+error[E0597]: `image` does not live long enough
+ --> tests/compile-fail/v8_19/blob_image.rs:7:17
+  |
+6 |         let image = black(1, 1).unwrap();
+  |             ----- binding `image` declared here
+7 |         bytes = image.blob_value("blob").unwrap();
+  |                 ^^^^^ borrowed value does not live long enough
+8 |     }
+  |     - `image` dropped here while still borrowed
+9 |     println!("{bytes:?}");
+  |                ----- borrow later used here

@@ -44,6 +44,11 @@ pub use image::{
 #[cfg(feature = "v8_18")]
 pub use vips_sys::{VipsForeignKeep, VipsForeignPdfPageBox};
 
+#[cfg(feature = "v8_19")]
+pub use vips_sys::{
+    VipsCICPColourPrimaries, VipsCICPMatrixCoefficients, VipsCICPTransferCharacteristics,
+};
+
 mod interpolate;
 pub use interpolate::{VipsInterpolate, VipsInterpolateMethod};
 

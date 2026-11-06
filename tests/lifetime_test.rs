@@ -7,6 +7,8 @@
 fn compile_fail() {
     let t = trybuild::TestCases::new();
     t.compile_fail("tests/compile-fail/*.rs");
+    #[cfg(feature = "v8_19")]
+    t.compile_fail("tests/compile-fail/v8_19/*.rs");
 }
 
 #[test]

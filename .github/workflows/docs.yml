@@ -42,4 +42,4 @@ jobs:
       - name: Run cargo doc
         env:
           RUSTDOCFLAGS: -D warnings
-        run: cargo doc --no-deps --all-features --locked
+        run: cargo doc --no-deps --locked

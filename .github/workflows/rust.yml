@@ -14,7 +14,7 @@ defaults:
     working-directory: vips-rs
 
 jobs:
-  # Cross-platform checks use the published vips-sys package pinned in Cargo.lock.
+  # Cross-platform checks use the vips-sys Git revision pinned in Cargo.lock.
   test:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -74,7 +74,7 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.toolchain }}-cargo-${{ hashFiles('vips-rs/Cargo.lock') }}
 
       - name: cargo check
-        run: cargo check --all-features --locked
+        run: cargo check --locked --features="${{ matrix.vips_features }}"
 
       - name: cargo clippy
         if: matrix.toolchain == 'stable'

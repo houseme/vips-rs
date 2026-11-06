@@ -1,6 +1,6 @@
 [package]
 name = "vips"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["elbaro <elbaro@github>", "houseme <housemecn@gmail.com>"]
 edition = "2024"
 resolver = "3"
@@ -11,13 +11,14 @@ repository = "https://github.com/houseme/vips-rs"
 categories = ["multimedia::images"]
 license = "MIT"
 
-# Use the published crate by default; see README for a local development patch.
+# Pin the coordinated sys update until its crates.io release is available.
 [dependencies]
-vips-sys = { version = "0.3.0", features = ["helpers"] }
+vips-sys = { version = "0.4.0", git = "https://github.com/houseme/vips-sys", rev = "366afa4d6d7c48d84edbbb86733428ff20b5c6a7", features = ["helpers"] }
 
 [features]
 default = []
 v8_18 = ["vips-sys/v8_18"]
+v8_19 = ["v8_18", "vips-sys/v8_19"]
 
 [dev-dependencies]
 trybuild = "1.0"

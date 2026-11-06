@@ -1,0 +1,11 @@
+error[E0597]: `bytes` does not live long enough
+ --> tests/compile-fail/v8_19/qoi_buffer.rs:7:43
+  |
+6 |         let bytes = vec![0; 32];
+  |             ----- binding `bytes` declared here
+7 |         image = VipsImage::qoiload_buffer(&bytes).unwrap();
+  |                                           ^^^^^^ borrowed value does not live long enough
+8 |     }
+  |     - `bytes` dropped here while still borrowed
+9 |     let _ = image.write_to_memory();
+  |             ----- borrow later used here

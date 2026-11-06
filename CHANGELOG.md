@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-07
+
+Prepared in Git for coordinated testing. Package publication is deferred.
+
+### Added
+
+- Opt-in `v8_19` feature for libvips 8.19.0-rc1 and later, including `v8_18`.
+- QOI file/buffer loading and saving, with native-owned encoded output.
+- `cicp2scrgb`, configurable `scrgb2cicp`, and public CICP enum families.
+- `percent_lum` with finite percentile/histogram-bound validation.
+- `loop_count` and zero-copy `blob_value`, whose slice borrows the image.
+- `smartcrop_at`, `thumbnail_file_at` and `thumbnail_buffer_at` for an explicit
+  point of interest. Thumbnail constructors retain native shrink-on-load.
+- Native image/codec tests, QOI-input and blob-image lifetime regressions,
+  pinned 8.19 CI and a functionality/performance review.
+
+### Changed
+
+- Use a fixed Git revision of `vips-sys` 0.4.0 while publication is deferred.
+  Default and `v8_18` functionality is verified with native 8.18.7.
+- CI selects native-compatible features and runs all features in the pinned
+  8.19 job. Future package publication requires the registry dependency switch.
+
+### Known upstream limitations
+
+- QOI thumbnails in 8.19.0-rc1 can fail with `bad QOI magic`; a native C
+  reproducer confirms the source-loader issue. QOI load/save tests pass.
+- HDR reference-white changes merged after RC1 remain part of the next upstream
+  validation cycle. See `docs/review-2026-11-07.md`.
+
 ## [0.2.0] - 2026-10-22
 
 ### Safety and compatibility
